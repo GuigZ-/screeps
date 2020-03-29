@@ -1,9 +1,20 @@
-// example declaration file - remove these and add your own custom typings
+interface SpawnMemory {
+  creeps: import('./Creeps/CreepRoleInterface').CreepRoleInterface[];
+}
 
-// memory extension samples
 interface CreepMemory {
+  build: boolean;
+  harvest: boolean;
+  number: number;
+  repair: boolean;
   role: string;
   room: string;
+  renew: boolean;
+  spawnName: string;
+  target: Id<any> | undefined;
+  transfer: boolean;
+  upgrade: boolean;
+  wall_build: boolean;
   working: boolean;
 }
 

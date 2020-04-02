@@ -1,13 +1,12 @@
 interface SpawnMemory {
-  creeps: import('./Creeps/CreepRoleInterface').CreepRoleInterface[];
+  creeps: string[]
 }
 
 interface CreepMemory {
   build: boolean;
   harvest: boolean;
-  number: number;
   repair: boolean;
-  role: string;
+  role: import('./Constants').WORKS;
   room: string;
   renew: boolean;
   spawnName: string;

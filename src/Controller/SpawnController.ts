@@ -149,5 +149,50 @@ export class SpawnController implements ControllerInterface {
 
     const structures: AnyStructure[] = spawn.room.find(FIND_MY_STRUCTURES, {filter: s => s.my});
 
+    /**
+     anyStructures.forEach((structure: AnyStructure) => {
+      const spawns = structure.room.find(FIND_MY_SPAWNS);
+      if (spawns.length === 0) {
+        return;
+      }
+
+      const spawn = spawns[0];
+
+      if (spawn) {
+        const path: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
+
+        path.path.forEach(pos => pos.createConstructionSite(STRUCTURE_ROAD));
+      }
+    });
+
+     room.find(FIND_SOURCES_ACTIVE).forEach((source: Source) => {
+      const spawn = source.room.find(FIND_MY_SPAWNS)[0];
+      if (spawn) {
+        const path: PathFinderPath = PositionUtil.pathRoad(spawn.pos, source.pos);
+
+        path.path.forEach(pos => pos.createConstructionSite(STRUCTURE_ROAD));
+      }
+    });
+
+     const available: string[] = [STRUCTURE_EXTENSION, STRUCTURE_SPAWN];
+
+     const structures: Structure[] = room.find(FIND_MY_STRUCTURES).filter(s => available.includes(s.structureType));
+     const range: number = 1;
+
+     structures.forEach((s: Structure) => {
+      for (let i = s.pos.x - range; i <= s.pos.x + range; i++) {
+        for (let j = s.pos.y - range; j <= s.pos.y + range; j++) {
+          const pos: RoomPosition = new RoomPosition(i, j, this.roomName);
+          if (Game.rooms[this.roomName].lookAt(pos).filter(r => r.terrain === 'plain').length === 0) {
+            continue;
+          }
+
+          if (pos.createConstructionSite(STRUCTURE_ROAD) === OK) {
+            break;
+          }
+        }
+      }
+
+    });**/
   }
 }

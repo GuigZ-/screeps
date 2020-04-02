@@ -1,16 +1,31 @@
-import {ErrorMapper} from 'utils/ErrorMapper';
-import {RoomController} from './Controller/RoomController';
+import {ErrorMapper} from 'Utils/ErrorMapper';
+import {SpawnController} from './Controller/SpawnController';
+import {CreepController} from './Controller/CreepController';
+import {ControllerInterface} from './Controller/ControllerInterface';
 
-let rooms: RoomController[] = [];
-
+let objects: ControllerInterface[];
 
 function init() {
-  Object.keys(Game.rooms).forEach((roomName: string) => {
-    rooms.push(new RoomController(roomName));
-  });
+  objects = [];
 
-  console.log(`Reload`);
+  for (const key in Game.spawns) {
+    const spawn: StructureSpawn = Game.spawns[key];
+
+    if (spawn && spawn.my) {
+      objects.push(new SpawnController(key));
+    }
+  }
+
+  for (const key in Game.creeps) {
+    const creep: Creep = Game.creeps[key];
+
+    if (creep && creep.my) {
+      objects.push(new CreepController(key));
+    }
+  }
 }
+
+console.log(`Restart game`);
 
 init();
 
@@ -19,14 +34,12 @@ init();
 export const loop = ErrorMapper.wrapLoop(() => {
   console.log(`Current game tick is ${Game.time}`);
 
-  if (Game.time % 50 === 0) {
-    rooms = [];
+  if (Game.time % 50 === 0 || SpawnController.forceReload) {
+    console.log(`Reload game controllers`);
     init();
   }
 
-  rooms.forEach((roomController: RoomController) => {
-    roomController.loop();
-  });
+  objects.forEach(o => o.loop());
 
   // Automatically delete memory of missing creeps
   for (const name in Memory.creeps) {

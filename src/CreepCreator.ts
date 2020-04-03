@@ -1,4 +1,5 @@
-import {BUILDER, HARVESTER, UPGRADER, WORKS} from './Constants';
+import {BUILDER, HARVESTER, KILLER, UPGRADER, WORKS} from './Constants';
+import {PositionUtil} from './Utils/PositionUtil';
 
 export class CreepCreator {
   private static defaultBody: BodyPartConstant[] = [MOVE, CARRY, WORK];
@@ -18,9 +19,9 @@ export class CreepCreator {
       case HARVESTER:
       case UPGRADER:
         bodyPartRequired = [
-          {body: CARRY, value: 45},
-          {body: WORK, value: 45},
-          {body: MOVE, value: 10}
+          {body: CARRY, value: 40},
+          {body: WORK, value: 40},
+          {body: MOVE, value: 20}
         ];
         break;
       case BUILDER:
@@ -28,6 +29,13 @@ export class CreepCreator {
           {body: CARRY, value: 40},
           {body: WORK, value: 40},
           {body: MOVE, value: 20}
+        ];
+        break;
+      case KILLER:
+        bodyPartRequired = [
+          {body: TOUGH, value: 20},
+          {body: MOVE, value: 20},
+          {body: ATTACK, value: 60}
         ];
         break;
       default:
@@ -58,7 +66,13 @@ export class CreepCreator {
           bodyPart,
           creepName,
           // @ts-ignore
-          {memory: {role: work, spawnName: spawn.name}}
+          {
+            memory: {
+              role: work,
+              spawnName: spawn.name,
+              source: work === HARVESTER ? CreepCreator.getTargetSource(spawn, counter) : null
+            }
+          }
         );
         counter++;
       } while (spawnCreep === ERR_NAME_EXISTS);
@@ -72,5 +86,13 @@ export class CreepCreator {
         break;
       }
     }
+  }
+
+  private static getTargetSource(spawn: StructureSpawn, counter: number): Source | undefined {
+    const sources: Source[] = PositionUtil.closestSources(spawn.pos, true);
+
+    const sourcesLength = sources.length;
+
+    return sources[counter % sourcesLength];
   }
 }

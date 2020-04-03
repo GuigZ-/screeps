@@ -1,6 +1,6 @@
 import {ControllerInterface} from './ControllerInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
-import {BUILDER, HARVESTER, UPGRADER} from '../Constants';
+import {BUILDER, HARVESTER, KILLER, UPGRADER} from '../Constants';
 
 export class CreepController implements ControllerInterface {
   private readonly creepName: string;
@@ -22,22 +22,26 @@ export class CreepController implements ControllerInterface {
   loop(): void {
     const creep: Creep = this.getCreep();
 
-    if (!creep.memory.working || creep.memory.harvest) {
+    if (creep.room.find(FIND_HOSTILE_CREEPS).length && creep.memory.role === KILLER) {
+      this.work();
+      return;
+    }
+
+    if ((!creep.memory.working || creep.memory.harvest) && creep.store.getFreeCapacity() > 0) {
       this.harvest();
     } else {
       this.work();
     }
   }
 
-  private resetWorkingMemory() : void
-  {
+  private resetWorkingMemory(): void {
     const creep: Creep = this.getCreep();
 
     creep.memory.working = false;
     creep.memory.transfer = false;
     creep.memory.upgrade = false;
     creep.memory.build = false;
-
+    creep.memory.attack = false;
   }
 
   private work(): void {
@@ -47,7 +51,7 @@ export class CreepController implements ControllerInterface {
 
     switch (creep.memory.role) {
       case HARVESTER:
-        this.transfer() || this.upgrade() || this.build();
+        this.transfer() || this.build() || this.upgrade();
         break;
       case UPGRADER:
         this.upgrade() || this.transfer() || this.build();
@@ -55,13 +59,15 @@ export class CreepController implements ControllerInterface {
       case BUILDER:
         this.build() || this.transfer() || this.upgrade();
         break;
+      case KILLER:
+        this.attack() || this.build() || this.transfer() || this.upgrade();
+        break;
       default:
-        throw new Error(`Work impossible`);
+        throw new Error(`Work impossible ${creep.name}`);
     }
 
     if (!creep.memory.working) {
-      creep.memory.upgrade = false;
-      creep.memory.transfer = false;
+      this.resetWorkingMemory();
       creep.memory.target = undefined;
       this.harvest();
     }
@@ -70,17 +76,19 @@ export class CreepController implements ControllerInterface {
   private harvest(): boolean {
     const creep: Creep = this.getCreep();
 
-    if (creep.memory.working) {
+    if (creep.memory.working || creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
       return false;
     }
 
     let target: RoomObject | null = null;
 
-    if (creep.memory.target) {
+    if (creep.memory.source && creep.memory.source.energy > 0) {
+      target = Game.getObjectById(creep.memory.source.id);
+    } else if (creep.memory.target) {
       target = Game.getObjectById(creep.memory.target);
     }
 
-    if (!target || !(target instanceof Source)) {
+    if (!target || !(target instanceof Source) || target.energy === 0) {
       const sources: Source[] = PositionUtil.closestSources(creep.pos);
 
       for (const key in sources) {
@@ -97,9 +105,8 @@ export class CreepController implements ControllerInterface {
       if (harvest === ERR_NOT_IN_RANGE) {
         creep.moveTo(target);
         return true;
-      } else if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-        creep.memory.target = undefined;
-        this.work();
+      } else if (harvest === OK) {
+        return true;
       }
     }
 
@@ -115,14 +122,25 @@ export class CreepController implements ControllerInterface {
 
     this.resetWorkingMemory();
 
-    const target: StructureSpawn | null = creep.pos.findClosestByPath(FIND_MY_SPAWNS);
+    let target: (StructureSpawn | StructureExtension | StructureTower) | undefined;
 
-    if (!target) {
+    if (!creep.memory.target) {
+      const targets: (StructureSpawn | StructureExtension | StructureTower)[] = PositionUtil.closestStorages(
+        creep.pos,
+        true
+      );
+
+      target = targets.length ? targets[0] : undefined;
+    } else {
+      target = Game.getObjectById(creep.memory.target);
+    }
+
+    if (!(target instanceof StructureSpawn) && !(target instanceof StructureExtension) && !(target instanceof StructureTower)) {
       return false;
     }
 
     if (target.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-      creep.memory.transfer = false;
+      this.resetWorkingMemory();
       return false;
     }
 
@@ -134,6 +152,11 @@ export class CreepController implements ControllerInterface {
 
     if (transfer === ERR_NOT_IN_RANGE) {
       creep.moveTo(target);
+      return true;
+    } else if (transfer === OK) {
+      if (target.store.getFreeCapacity(RESOURCE_ENERGY)) {
+        creep.memory.target = undefined;
+      }
       return true;
     }
 
@@ -200,10 +223,18 @@ export class CreepController implements ControllerInterface {
     }
 
     if (!target) {
-      // @ts-ignore
-      target = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
-        filter: e => e.room && e.room.name === creep.room.name
-      });
+      const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_ROAD];
+
+      for (const type of sortByTypes) {
+        // @ts-ignore
+        target = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
+          filter: e => e.room && e.room.name === creep.room.name && e.structureType === type
+        });
+
+        if (target) {
+          break;
+        }
+      }
     }
 
     if (!(target instanceof ConstructionSite)) {
@@ -224,6 +255,46 @@ export class CreepController implements ControllerInterface {
     }
 
     this.resetWorkingMemory();
+
+    return false;
+  }
+
+  private attack(): boolean {
+    const creep: Creep = this.getCreep();
+    let target: RoomObject | null = null;
+
+    this.resetWorkingMemory();
+
+    if (creep.memory.target) {
+      target = Game.getObjectById(creep.memory.target);
+    }
+
+    if (!target) {
+      const creeps: Creep[] = PositionUtil.closestHostileCreeps(creep.pos);
+
+      if (creeps.length === 0) {
+        return false;
+      }
+
+      target = creeps[0];
+    }
+
+    if (!(target instanceof Creep) || target.my) {
+      return false;
+    }
+
+    creep.memory.working = true;
+    creep.memory.attack = true;
+    creep.memory.target = target.id;
+
+    const attack = creep.attack(target);
+
+    if (attack === ERR_NOT_IN_RANGE) {
+      creep.moveTo(target);
+      return true;
+    } else if (attack === OK) {
+      return true;
+    }
 
     return false;
   }

@@ -3,6 +3,7 @@ interface SpawnMemory {
 }
 
 interface CreepMemory {
+  attack: boolean;
   build: boolean;
   harvest: boolean;
   repair: boolean;
@@ -15,6 +16,7 @@ interface CreepMemory {
   upgrade: boolean;
   wall_build: boolean;
   working: boolean;
+  source: Source | undefined
 }
 
 interface Memory {

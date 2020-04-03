@@ -2,6 +2,7 @@ import {ErrorMapper} from 'Utils/ErrorMapper';
 import {SpawnController} from './Controller/SpawnController';
 import {CreepController} from './Controller/CreepController';
 import {ControllerInterface} from './Controller/ControllerInterface';
+import {TowerController} from './Controller/TowerController';
 
 let objects: ControllerInterface[];
 
@@ -23,6 +24,14 @@ function init() {
       objects.push(new CreepController(key));
     }
   }
+
+  for (const key in Game.structures) {
+    const structure: Structure = Game.structures[key];
+
+    if (structure && structure instanceof StructureTower && structure.my) {
+      objects.push(new TowerController(key));
+    }
+  }
 }
 
 console.log(`Restart game`);
@@ -35,6 +44,7 @@ export const loop = ErrorMapper.wrapLoop(() => {
   console.log(`Current game tick is ${Game.time}`);
 
   if (Game.time % 50 === 0 || SpawnController.forceReload) {
+    SpawnController.forceReload = false;
     console.log(`Reload game controllers`);
     init();
   }

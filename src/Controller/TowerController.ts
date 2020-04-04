@@ -10,28 +10,33 @@ export class TowerController implements ControllerInterface {
 
   loop(): void {
     const tower: StructureTower = this.getTower();
-    this.attack(tower) || this.repair(tower);
+    this.attack(tower) || tower.store.getFreeCapacity(RESOURCE_ENERGY) > (tower.store.getCapacity(RESOURCE_ENERGY) / 2) || this.repair(
+      tower);
     // TODO: repair
   }
 
   private attack(tower: StructureTower): boolean {
-    const creeps: Creep[] = PositionUtil.closestHostileCreeps(tower.pos);
+    const hostiles: (Creep | StructureInvaderCore)[] = PositionUtil.closestHostiles(tower.pos);
 
-    if (creeps.length === 0) {
+    if (hostiles.length === 0) {
       return false;
     }
 
-    tower.attack(creeps[0]);
+    const target: (Creep | StructureInvaderCore) = hostiles[0];
+
+    if (target instanceof StructureInvaderCore) {
+      return false;
+    }
+
+    tower.attack(target);
     return true;
   }
 
   private repair(tower: StructureTower): boolean {
     const ownedStructures: AnyStructure[] = PositionUtil.closestStructureToRepair(tower.pos);
-console.log(`repair ${ownedStructures.length}`);
     if (ownedStructures.length === 0) {
       return false;
     }
-    console.log(`repair ${ownedStructures[0]}`);
 
     tower.repair(ownedStructures[0]);
     return true;

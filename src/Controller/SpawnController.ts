@@ -1,6 +1,6 @@
 import {ControllerInterface} from './ControllerInterface';
 import {CreepCreator} from '../CreepCreator';
-import {BUILDER, HARVESTER, KILLER, UPGRADER} from '../Constants';
+import {BUILDER, HARVESTER, KILLER, REPAIR, UPGRADER} from '../Constants';
 import {PositionUtil} from '../Utils/PositionUtil';
 
 export class SpawnController implements ControllerInterface {
@@ -67,7 +67,7 @@ export class SpawnController implements ControllerInterface {
 
     const attack: boolean = room.find(FIND_HOSTILE_CREEPS).length !== 0;
 
-    if (attack && !creepNumberByType[KILLER]) {
+    if ((attack || Game.flags) && !creepNumberByType[KILLER]) {
       CreepCreator.build(spawn, KILLER);
     }
 
@@ -81,6 +81,9 @@ export class SpawnController implements ControllerInterface {
       {filter: s => s.room && s.room.name === room.name}
     ).length;
 
+    if (spawn.room.energyAvailable > spawn.room.energyCapacityAvailable * 0.75) {
+      return;
+    }
 
     if (!creepNumberByType[HARVESTER] || creepNumberByType[HARVESTER] < sourcesNumber * Math.min(
       2,
@@ -91,6 +94,8 @@ export class SpawnController implements ControllerInterface {
       CreepCreator.build(spawn, UPGRADER);
     } else if (!creepNumberByType[BUILDER] || creepNumberByType[BUILDER] < 2) {
       CreepCreator.build(spawn, BUILDER);
+    } else if (!creepNumberByType[REPAIR] || creepNumberByType[REPAIR] < 2) {
+      CreepCreator.build(spawn, REPAIR);
     }
   }
 
@@ -187,7 +192,8 @@ export class SpawnController implements ControllerInterface {
                                   .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
          });
 
-    const storageStructures: (StructureSpawn | StructureExtension | StructureTower)[] = PositionUtil.closestStorages(spawn.pos);
+    const storageStructures: (StructureSpawn | StructureExtension | StructureTower)[] = PositionUtil.closestStorages(
+      spawn.pos);
 
     storageStructures.forEach(s => {
       const source: Source = PositionUtil.closestSources(s.pos, true)[0];
@@ -220,9 +226,7 @@ export class SpawnController implements ControllerInterface {
   }
 
   private buildTower(spawn: StructureSpawn): void {
-    console.log(`build tower`);
     if (!spawn.room.controller || spawn.room.controller.level <= 2) {
-      console.log(`failure 2`);
       return;
     }
 
@@ -230,7 +234,6 @@ export class SpawnController implements ControllerInterface {
       FIND_MY_STRUCTURES,
       {filter: s => s.structureType === STRUCTURE_TOWER}
     ).length === spawn.room.controller.level - 2) {
-      console.log(`failure`);
       return;
     }
 
@@ -254,9 +257,8 @@ export class SpawnController implements ControllerInterface {
       posY = posY + (moveMoreY ? marge : 0) - (moveLessY ? marge : 0);
       newPos = new RoomPosition(posX, posY, pos.roomName);
 
-      console.log(`=> ${newPos}`);
-    } while (spawn.room.lookAt(newPos)
-                  .filter(p => p.terrain === 'plain' || p.structure).length === 1 && newPos.createConstructionSite(
+      console.log(`Build tower at => ${newPos}`);
+    } while (posX >= 10 && posX <= 39 && posY >= 10 && posY <= 39 && newPos.createConstructionSite(
       STRUCTURE_TOWER) !== OK);
   }
 }

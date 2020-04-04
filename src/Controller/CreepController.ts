@@ -1,6 +1,7 @@
 import {ControllerInterface} from './ControllerInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
-import {BUILDER, HARVESTER, KILLER, UPGRADER} from '../Constants';
+import {BUILDER, HARVESTER, KILLER, REPAIR, UPGRADER} from '../Constants';
+import {SpawnController} from './SpawnController';
 
 export class CreepController implements ControllerInterface {
   private readonly creepName: string;
@@ -10,13 +11,12 @@ export class CreepController implements ControllerInterface {
   }
 
   private getCreep(): Creep {
-    const creep: Creep = Game.creeps[this.creepName];
-
-    if (!creep || !creep.my) {
+    if (!Game.creeps[this.creepName] || !Game.creeps[this.creepName].my) {
+      SpawnController.forceReload = true;
       throw Error(`Creep loop failed ${this.creepName}`);
     }
 
-    return creep;
+    return Game.creeps[this.creepName];
   }
 
   loop(): void {
@@ -59,8 +59,11 @@ export class CreepController implements ControllerInterface {
       case BUILDER:
         this.build() || this.transfer() || this.upgrade();
         break;
+      case REPAIR:
+        this.repair() || this.build() || this.transfer() || this.upgrade();
+        break;
       case KILLER:
-        this.attack() || this.build() || this.transfer() || this.upgrade();
+        this.attack() || this.flag() || this.reserved() || this.transfer();
         break;
       default:
         throw new Error(`Work impossible ${creep.name}`);
@@ -223,7 +226,7 @@ export class CreepController implements ControllerInterface {
     }
 
     if (!target) {
-      const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_ROAD];
+      const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_WALL, STRUCTURE_ROAD];
 
       for (const type of sortByTypes) {
         // @ts-ignore
@@ -259,6 +262,93 @@ export class CreepController implements ControllerInterface {
     return false;
   }
 
+  private flag(): boolean {
+    if (!Game.flags) {
+      return false;
+    }
+
+    let flag: Flag | undefined;
+
+    for (const key in Game.flags) {
+      flag = Game.flags[key];
+      break;
+    }
+
+    if (!flag) {
+      return false;
+    }
+
+    this.getCreep()
+        .moveTo(flag.pos, {visualizePathStyle: {lineStyle: undefined, stroke: '#F00', opacity: 1}});
+
+    if (flag.pos.roomName === this.getCreep().pos.roomName && PositionUtil.closestHostiles(flag.pos).length === 0) {
+      flag.remove();
+    }
+
+    return true;
+  }
+
+  private reserved(): boolean {
+    const creep: Creep = this.getCreep();
+
+    if (!creep.room.controller || creep.room.controller.owner) {
+      return false;
+    }
+
+    const reserved: CreepActionReturnCode = creep.reserveController(creep.room.controller);
+
+    if (reserved === ERR_NOT_IN_RANGE) {
+      creep.moveTo(creep.room.controller.pos);
+    }
+
+    return true;
+  }
+
+  private repair(): boolean {
+    const creep: Creep = this.getCreep();
+
+    if (creep.memory.working && !creep.memory.repair) {
+      return false;
+    }
+
+    this.resetWorkingMemory();
+
+    let target: RoomObject | null = null;
+
+    if (creep.memory.target) {
+      target = Game.getObjectById(creep.memory.target);
+    }
+
+    if (!target) {
+      const structures: AnyStructure[] = PositionUtil.closestStructureToRepair(creep.pos);
+
+      if (structures.length) {
+        target = structures[0];
+      }
+    }
+
+    if (!(target instanceof Structure)) {
+      return false;
+    }
+
+    creep.memory.working = true;
+    creep.memory.repair = true;
+    creep.memory.target = target.id;
+
+    const repair: CreepActionReturnCode | ERR_NOT_ENOUGH_RESOURCES = creep.repair(target);
+
+    if (repair === ERR_NOT_IN_RANGE) {
+      creep.moveTo(target);
+      return true;
+    } else if (repair === OK) {
+      return true;
+    }
+
+    this.resetWorkingMemory();
+
+    return false;
+  }
+
   private attack(): boolean {
     const creep: Creep = this.getCreep();
     let target: RoomObject | null = null;
@@ -270,16 +360,16 @@ export class CreepController implements ControllerInterface {
     }
 
     if (!target) {
-      const creeps: Creep[] = PositionUtil.closestHostileCreeps(creep.pos);
+      const hostiles: (Creep | StructureInvaderCore)[] = PositionUtil.closestHostiles(creep.pos);
 
-      if (creeps.length === 0) {
+      if (hostiles.length === 0) {
         return false;
       }
 
-      target = creeps[0];
+      target = hostiles[0];
     }
 
-    if (!(target instanceof Creep) || target.my) {
+    if ((!(target instanceof Creep) && !(target instanceof StructureInvaderCore)) || target.my) {
       return false;
     }
 
@@ -290,7 +380,7 @@ export class CreepController implements ControllerInterface {
     const attack = creep.attack(target);
 
     if (attack === ERR_NOT_IN_RANGE) {
-      creep.moveTo(target);
+      creep.moveTo(target, {visualizePathStyle: {lineStyle: undefined, stroke: '#F00', opacity: 1}});
       return true;
     } else if (attack === OK) {
       return true;

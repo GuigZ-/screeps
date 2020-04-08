@@ -1,8 +1,6 @@
 import {WorkInterface} from './WorkInterface';
-import {CreepController} from '../Controller/CreepController';
-import {PositionUtil} from '../Utils/PositionUtil';
-import {StorageType} from '../Constants';
 import {Finder} from '../Utils/Finder';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 
 export class Upgrade implements WorkInterface {
   work(creep: Creep): boolean {
@@ -10,28 +8,20 @@ export class Upgrade implements WorkInterface {
       return false;
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     const controllers: StructureController[] = this.getControllers(creep);
 
     for (const controller of controllers) {
       const upgrader: ScreepsReturnCode = creep.upgradeController(controller);
 
-      if (upgrader === ERR_NOT_IN_RANGE || upgrader === OK) {
-        if (upgrader === ERR_NOT_IN_RANGE) {
-          const moveTo: ScreepsReturnCode = creep.moveTo(controller);
-          if (moveTo !== OK && moveTo !== ERR_TIRED) {
-            continue;
-          }
-        }
-        creep.memory.working = true;
+      if (workMoveTo(creep, upgrader, controller)) {
         creep.memory.upgrade = true;
-        creep.memory.target = controller.id;
         return true;
       }
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     return false;
   }

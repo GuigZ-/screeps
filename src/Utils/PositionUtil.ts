@@ -1,4 +1,5 @@
 import {Hostiles, StorageType} from '../Constants';
+import {isRepairable} from './RepairUtil';
 
 export class PositionUtil {
   public static closestSources(pos: RoomPosition, roomSearch: boolean = false): Source[] {
@@ -70,11 +71,11 @@ export class PositionUtil {
   static closestStructureToRepair(pos: RoomPosition): AnyStructure[] {
     const rate: number = 0.01;
     let anyOwnedStructures: AnyStructure[] = Game.rooms[pos.roomName].find(FIND_MY_STRUCTURES, {
-      filter: s => s.hitsMax * rate > s.hits
+      filter: s => isRepairable(s)
     });
 
     anyOwnedStructures = anyOwnedStructures.concat(Game.rooms[pos.roomName].find(FIND_STRUCTURES, {
-      filter: s => (s.structureType === STRUCTURE_RAMPART || s.structureType === STRUCTURE_WALL) && (s.hitsMax * rate) > s.hits
+      filter: s => (s.structureType === STRUCTURE_RAMPART || s.structureType === STRUCTURE_WALL) && isRepairable(s)
     }));
 
     return _.sortBy(anyOwnedStructures, s => s.hits / s.hitsMax);

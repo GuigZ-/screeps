@@ -1,6 +1,7 @@
 import {WorkInterface} from './WorkInterface';
-import {CreepController} from '../Controller/CreepController';
 import {PositionUtil} from '../Utils/PositionUtil';
+import {isRepairable} from '../Utils/RepairUtil';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 
 export class Repair implements WorkInterface {
   work(creep: Creep): boolean {
@@ -8,28 +9,20 @@ export class Repair implements WorkInterface {
       return false;
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     const structures: Structure[] = Repair.getStructures(creep);
 
     for (const structure of structures) {
       const repair: CreepActionReturnCode | ERR_NOT_ENOUGH_RESOURCES = creep.repair(structure);
 
-      if (repair === ERR_NOT_IN_RANGE || repair === OK) {
-        if (repair === ERR_NOT_IN_RANGE) {
-          const moveTo: ScreepsReturnCode = creep.moveTo(structure);
-          if (moveTo !== OK && moveTo !== ERR_TIRED) {
-            continue;
-          }
-        }
-        creep.memory.working = true;
+      if (workMoveTo(creep, repair, structure)) {
         creep.memory.repair = true;
-        creep.memory.target = structure.id;
         return true;
       }
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     return false;
   }
@@ -48,7 +41,7 @@ export class Repair implements WorkInterface {
     if (creep.memory.target) {
       const target: RoomObject = Game.getObjectById(creep.memory.target);
 
-      if (target instanceof Structure) {
+      if (target instanceof Structure && isRepairable(target)) {
         constructionSites.push(target);
       }
     }

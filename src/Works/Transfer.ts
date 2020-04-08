@@ -1,7 +1,7 @@
 import {WorkInterface} from './WorkInterface';
-import {CreepController} from '../Controller/CreepController';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {StorageType} from '../Constants';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 
 export class Transfer implements WorkInterface {
   work(creep: Creep): boolean {
@@ -9,7 +9,7 @@ export class Transfer implements WorkInterface {
       return false;
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     const storages: StorageType[] = this.getStorages(creep);
 
@@ -19,22 +19,13 @@ export class Transfer implements WorkInterface {
       }
 
       const transfer: ScreepsReturnCode = creep.transfer(storage, RESOURCE_ENERGY);
-      if (transfer === ERR_NOT_IN_RANGE || transfer === OK) {
-        if (transfer === ERR_NOT_IN_RANGE) {
-          const moveTo: ScreepsReturnCode = creep.moveTo(storage);
-          if (moveTo !== OK && moveTo !== ERR_TIRED) {
-            continue;
-          }
-        }
-        creep.memory.working = true;
+      if (workMoveTo(creep, transfer, storage)) {
         creep.memory.transfer = true;
-        creep.memory.target = storage.id;
-
         return true;
       }
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     return false;
   }

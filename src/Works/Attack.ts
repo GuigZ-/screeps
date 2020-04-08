@@ -1,7 +1,7 @@
 import {WorkInterface} from './WorkInterface';
-import {CreepController} from '../Controller/CreepController';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {Hostiles} from '../Constants';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 
 export class Attack implements WorkInterface {
   work(creep: Creep): boolean {
@@ -9,28 +9,20 @@ export class Attack implements WorkInterface {
       return false;
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     const hostiles: Hostiles[] = Attack.getHostiles(creep);
 
     for (const hostile of hostiles) {
       const attack: CreepActionReturnCode = creep.attack(hostile);
 
-      if (attack === ERR_NOT_IN_RANGE || attack === OK) {
-        if (attack === ERR_NOT_IN_RANGE) {
-          const moveTo: ScreepsReturnCode = creep.moveTo(hostile);
-          if (moveTo !== OK && moveTo !== ERR_TIRED) {
-            continue;
-          }
-        }
-        creep.memory.working = true;
+      if (workMoveTo(creep, attack, hostile)) {
         creep.memory.attack = true;
-        creep.memory.target = hostile.id;
         return true;
       }
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     return false;
   }

@@ -1,6 +1,6 @@
 import {WorkInterface} from './WorkInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
-import {CreepController} from '../Controller/CreepController';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 
 export class Harvest implements WorkInterface {
 
@@ -9,33 +9,26 @@ export class Harvest implements WorkInterface {
       return false;
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
-    const sources = Harvest.getSources(creep);
+    const sources: Source[] = Harvest.getSources(creep);
 
     for (const source of sources) {
       const harvest: CreepActionReturnCode | ERR_NOT_FOUND | ERR_NOT_ENOUGH_RESOURCES = creep.harvest(source);
 
-      if (harvest === ERR_NOT_IN_RANGE || harvest === OK) {
-        if (harvest === ERR_NOT_IN_RANGE) {
-          const moveTo: ScreepsReturnCode = creep.moveTo(source);
-          if (moveTo !== OK && moveTo !== ERR_TIRED) {
-            continue;
-          }
-        }
-
+      if (workMoveTo(creep, harvest, source)) {
         creep.memory.harvest = true;
-        creep.memory.target = source.id;
-
         return true;
       }
     }
+
+    resetMemory(creep);
 
     return false;
   }
 
   private static can(creep: Creep): boolean {
-    if (creep.memory.working) {
+    if (creep.memory.working && !creep.memory.harvest) {
       return false;
     }
 

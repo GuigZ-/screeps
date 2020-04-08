@@ -1,5 +1,5 @@
 import {WorkInterface} from './WorkInterface';
-import {CreepController} from '../Controller/CreepController';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 
 export class Build implements WorkInterface {
   work(creep: Creep): boolean {
@@ -7,28 +7,20 @@ export class Build implements WorkInterface {
       return false;
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     const constructionSites: ConstructionSite[] = Build.getConstructionSites(creep);
 
     for (const constructionSite of constructionSites) {
       const build: CreepActionReturnCode | ERR_NOT_ENOUGH_RESOURCES | ERR_RCL_NOT_ENOUGH = creep.build(constructionSite);
 
-      if (build === ERR_NOT_IN_RANGE || build === OK) {
-        if (build === ERR_NOT_IN_RANGE) {
-          const moveTo: ScreepsReturnCode = creep.moveTo(constructionSite);
-          if (moveTo !== OK && moveTo !== ERR_TIRED) {
-            continue;
-          }
-        }
-        creep.memory.working = true;
+      if (workMoveTo(creep, build, constructionSite)) {
         creep.memory.build = true;
-        creep.memory.target = constructionSite.id;
         return true;
       }
     }
 
-    CreepController.resetMemory(creep);
+    resetMemory(creep);
 
     return false;
   }

@@ -1,4 +1,4 @@
-import {BUILDER, HARVESTER, KILLER, REPAIR, UPGRADER, WORKS} from './Constants';
+import {BUILDER, CLAIMER, HARVESTER, KILLER, REPAIRER, ROOM_BUILDER, UPGRADER, WORKS} from './Constants';
 import {PositionUtil} from './Utils/PositionUtil';
 
 export class CreepCreator {
@@ -8,7 +8,7 @@ export class CreepCreator {
     return `${spawn.room.name}_${work}_${counter}`;
   }
 
-  public static build(spawn: StructureSpawn, work: WORKS): void {
+  public static build(spawn: StructureSpawn, work: WORKS, opts: SpawnOptions = {}): void {
     const bodyPartNumber: number = 50;
     const bodyBasePart: number = CreepCreator.defaultBody.length;
     const freePart: number = bodyPartNumber - bodyBasePart;
@@ -16,26 +16,27 @@ export class CreepCreator {
     let bodyPartRequired: any[] = [];
 
     switch (work) {
-      case HARVESTER:
-      case UPGRADER:
-        bodyPartRequired = [
-          {body: CARRY, value: 40},
-          {body: WORK, value: 40},
-          {body: MOVE, value: 20}
-        ];
-        break;
-      case REPAIR:
+      case ROOM_BUILDER:
         bodyPartRequired = [
           {body: CARRY, value: 30},
           {body: WORK, value: 30},
           {body: MOVE, value: 40}
         ];
         break;
+      case HARVESTER:
+      case UPGRADER:
       case BUILDER:
         bodyPartRequired = [
-          {body: CARRY, value: 40},
-          {body: WORK, value: 40},
-          {body: MOVE, value: 20}
+          {body: CARRY, value: 35},
+          {body: WORK, value: 35},
+          {body: MOVE, value: 30}
+        ];
+        break;
+      case REPAIRER:
+        bodyPartRequired = [
+          {body: CARRY, value: 30},
+          {body: WORK, value: 30},
+          {body: MOVE, value: 40}
         ];
         break;
       case KILLER:
@@ -45,6 +46,14 @@ export class CreepCreator {
           {body: ATTACK, value: 42},
           {body: CARRY, value: 2},
           {body: WORK, value: 2}
+        ];
+        break;
+      case CLAIMER:
+        bodyPartRequired = [
+          {body: MOVE, value: 58},
+          {body: CLAIM, value: 2},
+          {body: CARRY, value: 20},
+          {body: WORK, value: 20}
         ];
         break;
       default:
@@ -71,6 +80,12 @@ export class CreepCreator {
 
       do {
         creepName = CreepCreator.buildName(spawn, work, counter);
+        let source: Source | undefined;
+
+        if (work === HARVESTER) {
+          source = CreepCreator.getTargetSource(spawn, counter);
+        }
+
         spawnCreep = spawn.spawnCreep(
           bodyPart,
           creepName,
@@ -79,8 +94,9 @@ export class CreepCreator {
             memory: {
               role: work,
               spawnName: spawn.name,
-              source: work === HARVESTER ? CreepCreator.getTargetSource(spawn, counter) : null
-            }
+              source: source ? source.id : null,
+              ...opts.memory
+            },
           }
         );
         counter++;

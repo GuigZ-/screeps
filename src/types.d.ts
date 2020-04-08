@@ -5,18 +5,21 @@ interface SpawnMemory {
 interface CreepMemory {
   attack: boolean;
   build: boolean;
+  claim: boolean;
+  claimPos: RoomPosition;
+  flag: string;
   harvest: boolean;
+  renew: boolean;
   repair: boolean;
   role: import('./Constants').WORKS;
   room: string;
-  renew: boolean;
+  source: Source | undefined
   spawnName: string;
   target: Id<any> | undefined;
   transfer: boolean;
   upgrade: boolean;
   wall_build: boolean;
   working: boolean;
-  source: Source | undefined
 }
 
 interface Memory {

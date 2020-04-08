@@ -1,5 +1,6 @@
 import {ControllerInterface} from './ControllerInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
+import {Hostiles} from '../Constants';
 
 export class TowerController implements ControllerInterface {
   private readonly towerName: string;
@@ -16,13 +17,13 @@ export class TowerController implements ControllerInterface {
   }
 
   private attack(tower: StructureTower): boolean {
-    const hostiles: (Creep | StructureInvaderCore)[] = PositionUtil.closestHostiles(tower.pos);
+    const hostiles: Hostiles[] = PositionUtil.closestHostiles(tower.pos);
 
     if (hostiles.length === 0) {
       return false;
     }
 
-    const target: (Creep | StructureInvaderCore) = hostiles[0];
+    const target: Hostiles = hostiles[0];
 
     if (target instanceof StructureInvaderCore) {
       return false;

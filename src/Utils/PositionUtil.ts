@@ -1,16 +1,18 @@
+import {Hostiles, StorageType} from '../Constants';
+
 export class PositionUtil {
   public static closestSources(pos: RoomPosition, roomSearch: boolean = false): Source[] {
-    const allSources: Source[] = pos.findInRange(
+    const sources: Source[] = pos.findInRange(
       FIND_SOURCES,
       50,
-      {filter: s => !roomSearch || s.room.name === pos.roomName}
+      {filter: s => s.energy > 0 && (!roomSearch || s.room.name === pos.roomName)}
     );
-    return _.sortBy(allSources, s => pos.getRangeTo(s));
+    return _.sortBy(sources, s => pos.getRangeTo(s));
   }
 
-  public static closestStorages(pos: RoomPosition, freeCapacity: boolean = false): (StructureSpawn | StructureExtension | StructureTower)[] {
+  public static closestStorages(pos: RoomPosition, freeCapacity: boolean = false): StorageType[] {
     // @ts-ignore
-    const allStorages: (StructureSpawn | StructureExtension | StructureTower)[] = pos.findInRange(
+    const storages: StorageType[] = pos.findInRange(
       FIND_MY_STRUCTURES,
       50,
       {
@@ -20,14 +22,22 @@ export class PositionUtil {
       }
     );
 
-    return _.sortBy(allStorages, s => pos.getRangeTo(s));
+    return _.sortBy(storages, s => pos.getRangeTo(s));
   }
 
-  public static closestHostiles(pos: RoomPosition): (Creep | StructureInvaderCore)[] {
-    let allHostiles: (Creep | StructureInvaderCore)[] = Game.rooms[pos.roomName].find(FIND_HOSTILE_CREEPS);
+  public static closestHostiles(pos: RoomPosition): Hostiles[] {
+    const room = Game.rooms[pos.roomName];
+    if (!room) {
+      return [];
+    }
+
+    let allHostiles: Hostiles[] = room.find(FIND_HOSTILE_CREEPS);
 
     // @ts-ignore
-    allHostiles = allHostiles.concat(Game.rooms[pos.roomName].find(FIND_STRUCTURES, {filter: s => s.structureType === STRUCTURE_INVADER_CORE}));
+    allHostiles = allHostiles.concat(room.find(
+      FIND_STRUCTURES,
+      {filter: s => s.structureType === STRUCTURE_INVADER_CORE}
+    ));
 
     return _.sortBy(allHostiles, s => pos.getRangeTo(s));
   }
@@ -58,7 +68,7 @@ export class PositionUtil {
   }
 
   static closestStructureToRepair(pos: RoomPosition): AnyStructure[] {
-    const rate: number = 0.2;
+    const rate: number = 0.01;
     let anyOwnedStructures: AnyStructure[] = Game.rooms[pos.roomName].find(FIND_MY_STRUCTURES, {
       filter: s => s.hitsMax * rate > s.hits
     });

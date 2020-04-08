@@ -1,17 +1,44 @@
 import {ControllerInterface} from './ControllerInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
-import {BUILDER, HARVESTER, KILLER, REPAIR, UPGRADER} from '../Constants';
+import {BUILDER, CLAIMER, HARVESTER, KILLER, REPAIRER, ROOM_BUILDER, UPGRADER} from '../Constants';
 import {SpawnController} from './SpawnController';
+import {Finder} from '../Utils/Finder';
+import {Harvest} from '../Works/Harvest';
+import {WorkInterface} from '../Works/WorkInterface';
+import {Transfer} from '../Works/Transfer';
+import {Upgrade} from '../Works/Upgrade';
+import {Build} from '../Works/Build';
+import {Repair} from '../Works/Repair';
+import {Attack} from '../Works/Attack';
 
 export class CreepController implements ControllerInterface {
   private readonly creepName: string;
+  private worksByType: { [p: string]: WorkInterface[] };
 
   constructor(creep: string) {
     this.creepName = creep;
+
+    const harvest: Harvest = new Harvest();
+    const transfer: Transfer = new Transfer();
+    const build: Build = new Build();
+    const upgrade: Upgrade = new Upgrade();
+    const repair: Repair = new Repair();
+    const attack: Attack = new Attack();
+
+    this.worksByType = {
+      [BUILDER]: [harvest, build, transfer, upgrade],
+      // [CLAIMER]: [harvest],
+      [HARVESTER]: [harvest, transfer, build, upgrade],
+      // [KILLER]: [harvest],
+      [REPAIRER]: [harvest, repair, build, transfer, upgrade],
+      // [ROOM_BUILDER]: [harvest],
+      [UPGRADER]: [harvest, upgrade, transfer, build],
+    }
   }
 
   private getCreep(): Creep {
-    if (!Game.creeps[this.creepName] || !Game.creeps[this.creepName].my) {
+    if (!Object.keys(Game.creeps)
+               .includes(this.creepName) || !Game.creeps[this.creepName] || !Game.creeps[this.creepName].my) {
       SpawnController.forceReload = true;
       throw Error(`Creep loop failed ${this.creepName}`);
     }
@@ -22,7 +49,7 @@ export class CreepController implements ControllerInterface {
   loop(): void {
     const creep: Creep = this.getCreep();
 
-    if (creep.room.find(FIND_HOSTILE_CREEPS).length && creep.memory.role === KILLER) {
+    if ((creep.room.find(FIND_HOSTILE_CREEPS).length || Game.flags) && creep.memory.role === KILLER) {
       this.work();
       return;
     }
@@ -37,11 +64,16 @@ export class CreepController implements ControllerInterface {
   private resetWorkingMemory(): void {
     const creep: Creep = this.getCreep();
 
+    CreepController.resetMemory(creep);
+  }
+
+  public static resetMemory(creep: Creep): void {
     creep.memory.working = false;
     creep.memory.transfer = false;
     creep.memory.upgrade = false;
     creep.memory.build = false;
     creep.memory.attack = false;
+    creep.memory.claim = false;
   }
 
   private work(): void {
@@ -49,240 +81,140 @@ export class CreepController implements ControllerInterface {
 
     creep.memory.harvest = false;
 
-    switch (creep.memory.role) {
-      case HARVESTER:
-        this.transfer() || this.build() || this.upgrade();
-        break;
-      case UPGRADER:
-        this.upgrade() || this.transfer() || this.build();
-        break;
-      case BUILDER:
-        this.build() || this.transfer() || this.upgrade();
-        break;
-      case REPAIR:
-        this.repair() || this.build() || this.transfer() || this.upgrade();
-        break;
-      case KILLER:
-        this.attack() || this.flag() || this.reserved() || this.transfer();
-        break;
-      default:
-        throw new Error(`Work impossible ${creep.name}`);
+    if (this.worksByType[creep.memory.role]) {
+      for (const work of this.worksByType[creep.memory.role]) {
+        if (work.work(creep)) {
+          break;
+        }
+      }
+    } else {
+      switch (creep.memory.role) {
+        case ROOM_BUILDER:
+          this.roomBuilder() || this.build() || this.transfer();
+          break;
+        case KILLER:
+          this.attack() || this.flag() || this.reserved() || this.build() || this.transfer();
+          break;
+        case CLAIMER:
+          this.flag() || this.claim() || this.build() || this.transfer();
+          break;
+        default:
+          throw new Error(`Work impossible ${creep.name}`);
+      }
+    }
+
+    if (creep.store.getCapacity(RESOURCE_ENERGY) === creep.store.getFreeCapacity(RESOURCE_ENERGY)) {
+      CreepController.resetMemory(creep);
     }
 
     if (!creep.memory.working) {
-      this.resetWorkingMemory();
       creep.memory.target = undefined;
       this.harvest();
     }
   }
 
+  // ============================
+
   private harvest(): boolean {
     const creep: Creep = this.getCreep();
 
-    if (creep.memory.working || creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-      return false;
-    }
-
-    let target: RoomObject | null = null;
-
-    if (creep.memory.source && creep.memory.source.energy > 0) {
-      target = Game.getObjectById(creep.memory.source.id);
-    } else if (creep.memory.target) {
-      target = Game.getObjectById(creep.memory.target);
-    }
-
-    if (!target || !(target instanceof Source) || target.energy === 0) {
-      const sources: Source[] = PositionUtil.closestSources(creep.pos);
-
-      for (const key in sources) {
-        const source: Source = sources[key];
-
-        if (creep.harvest(source) === ERR_NOT_IN_RANGE && creep.moveTo(source) === OK) {
-          creep.memory.harvest = true;
-          creep.memory.target = source.id;
-          break;
-        }
-      }
-    } else {
-      const harvest = creep.harvest(target);
-      if (harvest === ERR_NOT_IN_RANGE) {
-        creep.moveTo(target);
-        return true;
-      } else if (harvest === OK) {
-        return true;
-      }
-    }
-
-    return false;
+    return (new Harvest()).work(creep);
   }
 
   private transfer(): boolean {
     const creep: Creep = this.getCreep();
 
-    if (creep.memory.working && !creep.memory.transfer) {
-      return false;
-    }
-
-    this.resetWorkingMemory();
-
-    let target: (StructureSpawn | StructureExtension | StructureTower) | undefined;
-
-    if (!creep.memory.target) {
-      const targets: (StructureSpawn | StructureExtension | StructureTower)[] = PositionUtil.closestStorages(
-        creep.pos,
-        true
-      );
-
-      target = targets.length ? targets[0] : undefined;
-    } else {
-      target = Game.getObjectById(creep.memory.target);
-    }
-
-    if (!(target instanceof StructureSpawn) && !(target instanceof StructureExtension) && !(target instanceof StructureTower)) {
-      return false;
-    }
-
-    if (target.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-      this.resetWorkingMemory();
-      return false;
-    }
-
-    creep.memory.working = true;
-    creep.memory.transfer = true;
-    creep.memory.target = target.id;
-
-    const transfer: ScreepsReturnCode = creep.transfer(target, RESOURCE_ENERGY);
-
-    if (transfer === ERR_NOT_IN_RANGE) {
-      creep.moveTo(target);
-      return true;
-    } else if (transfer === OK) {
-      if (target.store.getFreeCapacity(RESOURCE_ENERGY)) {
-        creep.memory.target = undefined;
-      }
-      return true;
-    }
-
-    this.resetWorkingMemory();
-
-    return false;
-  }
-
-  private upgrade(): boolean {
-    const creep: Creep = this.getCreep();
-
-    if (creep.memory.working && !creep.memory.upgrade) {
-      return false;
-    }
-
-    this.resetWorkingMemory();
-
-    let target: RoomObject | null = null;
-
-    if (creep.memory.target) {
-      target = Game.getObjectById(creep.memory.target);
-    }
-
-    if (!target) {
-      target = creep.pos.findClosestByPath(FIND_STRUCTURES, {
-        filter: e => e.structureType === STRUCTURE_CONTROLLER && e.my
-      });
-    }
-
-    if (!(target instanceof StructureController)) {
-      return false;
-    }
-
-    creep.memory.working = true;
-    creep.memory.upgrade = true;
-    creep.memory.target = target.id;
-
-    const upgrade: ScreepsReturnCode = creep.upgradeController(target);
-    if (upgrade === ERR_NOT_IN_RANGE) {
-      creep.moveTo(target);
-      return true;
-    } else if (upgrade === OK) {
-      return true;
-    }
-
-    this.resetWorkingMemory();
-
-    return false;
+    return (new Transfer()).work(creep);
   }
 
   private build(): boolean {
+
     const creep: Creep = this.getCreep();
 
-    if (creep.memory.working && !creep.memory.build) {
-      return false;
-    }
-
-    this.resetWorkingMemory();
-
-    let target: RoomObject | null = null;
-
-    if (creep.memory.target) {
-      target = Game.getObjectById(creep.memory.target);
-    }
-
-    if (!target) {
-      const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_WALL, STRUCTURE_ROAD];
-
-      for (const type of sortByTypes) {
-        // @ts-ignore
-        target = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
-          filter: e => e.room && e.room.name === creep.room.name && e.structureType === type
-        });
-
-        if (target) {
-          break;
-        }
-      }
-    }
-
-    if (!(target instanceof ConstructionSite)) {
-      return false;
-    }
-
-    creep.memory.working = true;
-    creep.memory.build = true;
-    creep.memory.target = target.id;
-
-    const build: CreepActionReturnCode | ERR_NOT_ENOUGH_RESOURCES | ERR_RCL_NOT_ENOUGH = creep.build(target);
-
-    if (build === ERR_NOT_IN_RANGE) {
-      creep.moveTo(target);
-      return true;
-    } else if (build === OK) {
-      return true;
-    }
-
-    this.resetWorkingMemory();
-
-    return false;
+    return (new Build()).work(creep);
   }
+
+  private attack(): boolean {
+    const creep: Creep = this.getCreep();
+
+    return (new Attack()).work(creep);
+  }
+
+  // ============================
 
   private flag(): boolean {
     if (!Game.flags) {
       return false;
     }
 
-    let flag: Flag | undefined;
+    const creep: Creep = this.getCreep();
 
-    for (const key in Game.flags) {
-      flag = Game.flags[key];
-      break;
-    }
-
-    if (!flag) {
+    if (creep.memory.working && !creep.memory.flag) {
       return false;
     }
 
-    this.getCreep()
-        .moveTo(flag.pos, {visualizePathStyle: {lineStyle: undefined, stroke: '#F00', opacity: 1}});
+    this.resetWorkingMemory();
 
-    if (flag.pos.roomName === this.getCreep().pos.roomName && PositionUtil.closestHostiles(flag.pos).length === 0) {
-      flag.remove();
+    creep.memory.working = true;
+
+    let flag: Flag | undefined;
+
+    if (!creep.memory.flag) {
+
+      if (Object.keys(Game.flags).length) {
+        const flags: Flag[] = _.sortBy(Game.flags, f => creep.pos.getRangeTo(f.pos));
+        for (const key in flags) {
+          const f: Flag = flags[key];
+          if (!f) {
+            continue;
+          }
+
+          if (PositionUtil.closestHostiles(f.pos).length > 0 && creep.memory.role !== KILLER) {
+            continue;
+          }
+
+          console.log('gogogo');
+          creep.memory.flag = f.name;
+          flag = f;
+          break;
+        }
+      }
+    } else {
+      flag = Game.flags[creep.memory.flag];
+    }
+
+    if (!flag || (flag.room && creep.room.name === flag.room.name)) {
+      return false;
+    }
+
+    if (creep.moveTo(flag) === OK) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private claim(): boolean {
+    const creep: Creep = this.getCreep();
+
+    this.resetWorkingMemory();
+
+    if (!creep.room.controller || creep.room.controller.owner) {
+      return false;
+    }
+
+    creep.memory.working = true;
+    creep.memory.claim = true;
+
+    const claim: CreepActionReturnCode | ERR_FULL | ERR_GCL_NOT_ENOUGH = creep.claimController(creep.room.controller);
+
+    if (claim === ERR_NOT_IN_RANGE) {
+      creep.moveTo(creep.room.controller.pos, {visualizePathStyle: {lineStyle: undefined, stroke: '#0F0', opacity: 1}});
+    } else if (claim === ERR_FULL) {
+      this.harvest();
+      return false;
+    } else if (claim === ERR_INVALID_TARGET) {
+      creep.attackController(creep.room.controller);
     }
 
     return true;
@@ -291,101 +223,56 @@ export class CreepController implements ControllerInterface {
   private reserved(): boolean {
     const creep: Creep = this.getCreep();
 
+    this.resetWorkingMemory();
+
     if (!creep.room.controller || creep.room.controller.owner) {
       return false;
     }
 
-    const reserved: CreepActionReturnCode = creep.reserveController(creep.room.controller);
+    creep.memory.working = true;
 
-    if (reserved === ERR_NOT_IN_RANGE) {
+    const attackController: CreepActionReturnCode = creep.attackController(creep.room.controller);
+
+    if (attackController === ERR_NOT_IN_RANGE) {
       creep.moveTo(creep.room.controller.pos);
+      return true;
+    } else if (attackController === OK) {
+      return true;
     }
+
+    console.log(attackController);
+
+    return false;
+  }
+
+  private roomBuilder(): boolean {
+    const creep: Creep = this.getCreep();
+
+    this.resetWorkingMemory();
+
+    const rooms: Room[] = Finder.findRoomsToBuild();
+
+    if (!rooms.length) {
+      return false;
+    }
+
+    const room: Room = rooms[0];
+    if (!room) {
+      return false;
+    }
+
+    if (!room.controller) {
+      return false;
+    }
+
+    if (creep.room.name === room.controller.room.name) {
+      return false;
+    }
+
+    creep.memory.working = true;
+
+    creep.moveTo(room.controller.pos, {visualizePathStyle: {lineStyle: undefined, stroke: '#00F', opacity: 1}});
 
     return true;
-  }
-
-  private repair(): boolean {
-    const creep: Creep = this.getCreep();
-
-    if (creep.memory.working && !creep.memory.repair) {
-      return false;
-    }
-
-    this.resetWorkingMemory();
-
-    let target: RoomObject | null = null;
-
-    if (creep.memory.target) {
-      target = Game.getObjectById(creep.memory.target);
-    }
-
-    if (!target) {
-      const structures: AnyStructure[] = PositionUtil.closestStructureToRepair(creep.pos);
-
-      if (structures.length) {
-        target = structures[0];
-      }
-    }
-
-    if (!(target instanceof Structure)) {
-      return false;
-    }
-
-    creep.memory.working = true;
-    creep.memory.repair = true;
-    creep.memory.target = target.id;
-
-    const repair: CreepActionReturnCode | ERR_NOT_ENOUGH_RESOURCES = creep.repair(target);
-
-    if (repair === ERR_NOT_IN_RANGE) {
-      creep.moveTo(target);
-      return true;
-    } else if (repair === OK) {
-      return true;
-    }
-
-    this.resetWorkingMemory();
-
-    return false;
-  }
-
-  private attack(): boolean {
-    const creep: Creep = this.getCreep();
-    let target: RoomObject | null = null;
-
-    this.resetWorkingMemory();
-
-    if (creep.memory.target) {
-      target = Game.getObjectById(creep.memory.target);
-    }
-
-    if (!target) {
-      const hostiles: (Creep | StructureInvaderCore)[] = PositionUtil.closestHostiles(creep.pos);
-
-      if (hostiles.length === 0) {
-        return false;
-      }
-
-      target = hostiles[0];
-    }
-
-    if ((!(target instanceof Creep) && !(target instanceof StructureInvaderCore)) || target.my) {
-      return false;
-    }
-
-    creep.memory.working = true;
-    creep.memory.attack = true;
-    creep.memory.target = target.id;
-
-    const attack = creep.attack(target);
-
-    if (attack === ERR_NOT_IN_RANGE) {
-      creep.moveTo(target, {visualizePathStyle: {lineStyle: undefined, stroke: '#F00', opacity: 1}});
-      return true;
-    } else if (attack === OK) {
-      return true;
-    }
-
-    return false;
   }
 }

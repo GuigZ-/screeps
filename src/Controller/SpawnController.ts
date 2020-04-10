@@ -1,6 +1,16 @@
 import {ControllerInterface} from './ControllerInterface';
 import {CreepCreator} from '../CreepCreator';
-import {BUILDER, CLAIMER, HARVESTER, KILLER, REPAIRER, ROOM_BUILDER, StorageType, UPGRADER} from '../Constants';
+import {
+  BUILDER,
+  CLAIMER,
+  HARVESTER,
+  KILLER,
+  REPAIRER,
+  ROOM_BUILDER,
+  StorageType,
+  UNDERTAKER,
+  UPGRADER
+} from '../Constants';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {Finder} from '../Utils/Finder';
 
@@ -100,6 +110,8 @@ export class SpawnController implements ControllerInterface {
     } else if (rooms.length) {
       // @ts-ignore
       CreepCreator.build(spawn, ROOM_BUILDER, {memory: {room: rooms[0].name}});
+    } else if (!creepNumberByType[UNDERTAKER]) {
+      CreepCreator.build(spawn, UNDERTAKER);
     }
 
     const ownRooms: Room[] = Finder.findOwnRooms();
@@ -238,32 +250,15 @@ export class SpawnController implements ControllerInterface {
 
     storageStructures.forEach(s => {
       const source: Source = PositionUtil.closestSources(s.pos, true)[0];
+
+      if (!source) {
+        return;
+      }
+
       const {path}: PathFinderPath = PositionUtil.pathRoad(s.pos, source.pos);
       path.forEach(pos => pos.look()
                              .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
     });
-
-    /**
-     const available: string[] = [STRUCTURE_EXTENSION, STRUCTURE_SPAWN];
-
-     const structures: Structure[] = room.find(FIND_MY_STRUCTURES).filter(s => available.includes(s.structureType));
-     const range: number = 1;
-
-     structures.forEach((s: Structure) => {
-      for (let i = s.pos.x - range; i <= s.pos.x + range; i++) {
-        for (let j = s.pos.y - range; j <= s.pos.y + range; j++) {
-          const pos: RoomPosition = new RoomPosition(i, j, this.roomName);
-          if (Game.rooms[this.roomName].lookAt(pos).filter(r => r.terrain === 'plain').length === 0) {
-            continue;
-          }
-
-          if (pos.createConstructionSite(STRUCTURE_ROAD) === OK) {
-            break;
-          }
-        }
-      }
-
-    });**/
   }
 
   private buildTower(spawn: StructureSpawn): void {

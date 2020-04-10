@@ -6,6 +6,8 @@ export class Harvest implements WorkInterface {
 
   work(creep: Creep): boolean {
     if (!Harvest.can(creep)) {
+      resetMemory(creep);
+
       return false;
     }
 
@@ -19,6 +21,8 @@ export class Harvest implements WorkInterface {
       if (workMoveTo(creep, harvest, source)) {
         creep.memory.harvest = true;
         return true;
+      } else {
+        console.log(`${creep.name} - ${harvest}`)
       }
     }
 

@@ -12,14 +12,10 @@ export const resetMemory = (creep: Creep): void => {
 
 export const workMoveTo = (creep: Creep, work: ScreepsReturnCode, target: { pos: RoomPosition, id: Id<any> }): boolean => {
   if (work === ERR_NOT_IN_RANGE || work === OK) {
-    console.log(`${creep.name} harvest`);
     if (work === ERR_NOT_IN_RANGE && !moveTo(creep, target)) {
 
-      console.log(`${creep.name} failed`);
       return false;
     }
-
-    console.log(`${creep.name} move`);
 
     creep.memory.working = true;
     creep.memory.target = target.id;

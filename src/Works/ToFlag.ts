@@ -1,6 +1,6 @@
 import {WorkInterface} from './WorkInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
-import {KILLER} from '../Constants';
+import {Hostiles, KILLER} from '../Constants';
 import {moveTo, resetMemory} from '../Utils/CreepUtil';
 
 export class ToFlag implements WorkInterface {
@@ -14,7 +14,13 @@ export class ToFlag implements WorkInterface {
     const flags: Flag[] = ToFlag.getFlags(creep);
 
     for (const flag of flags) {
-      if (PositionUtil.closestHostiles(flag.pos).length > 0 && creep.memory.role !== KILLER) {
+      const hostiles: Hostiles[] = PositionUtil.closestHostiles(flag.pos);
+
+      if (hostiles.length > 0 && creep.memory.role !== KILLER) {
+        continue;
+      }
+
+      if (hostiles.length === 0 && creep.memory.role === KILLER) {
         continue;
       }
 

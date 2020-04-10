@@ -7,16 +7,17 @@ interface CreepMemory {
   build: boolean;
   claim: boolean;
   claimPos: RoomPosition;
-  flag: string | undefined;
+  flag?: string;
   harvest: boolean;
   renew: boolean;
   repair: boolean;
   role: import('./Constants').WORKS;
-  room: string | undefined;
-  source: Source | undefined
+  room?: string;
+  source?: Source
   spawnName: string;
-  target: Id<any> | undefined;
+  target?: Id<any>;
   transfer: boolean;
+  undertaker: boolean;
   upgrade: boolean;
   wall_build: boolean;
   working: boolean;

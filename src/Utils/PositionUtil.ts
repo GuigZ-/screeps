@@ -1,4 +1,4 @@
-import {Hostiles, StorageType} from '../Constants';
+import {Hostiles, StorageType, UndertakerSource} from '../Constants';
 import {isRepairable} from './RepairUtil';
 
 export class PositionUtil {
@@ -8,6 +8,22 @@ export class PositionUtil {
       50,
       {filter: s => s.energy > 0 && (!roomSearch || s.room.name === pos.roomName)}
     );
+    return _.sortBy(sources, s => pos.getRangeTo(s));
+  }
+
+  public static closestUndertakerSources(pos: RoomPosition, roomSearch: boolean = false): UndertakerSource[] {
+    let sources: UndertakerSource[] = pos.findInRange(
+      FIND_RUINS,
+      50,
+      {filter: s => s.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && (!roomSearch || (s.room && s.room.name === pos.roomName))}
+    );
+
+    sources = sources.concat(pos.findInRange(
+      FIND_TOMBSTONES,
+      50,
+      {filter: s => s.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && (!roomSearch || (s.room && s.room.name === pos.roomName))}
+    ));
+
     return _.sortBy(sources, s => pos.getRangeTo(s));
   }
 

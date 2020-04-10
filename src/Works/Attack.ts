@@ -28,11 +28,7 @@ export class Attack implements WorkInterface {
   }
 
   private static can(creep: Creep): boolean {
-    if (creep.memory.working && !creep.memory.attack) {
-      return false;
-    }
-
-    return creep.store.getCapacity(RESOURCE_ENERGY) !== creep.store.getFreeCapacity(RESOURCE_ENERGY);
+    return !(creep.memory.working && !creep.memory.attack);
   }
 
   private static getHostiles(creep: Creep): Hostiles[] {

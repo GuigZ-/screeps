@@ -20,16 +20,16 @@ export class RoomUtil {
       console.log(JSON.stringify(firstCardinality), JSON.stringify(secondCardinality));
     }
 
-    // if (firstCardinality.N <= secondCardinality.N + 1 && firstCardinality.N >= secondCardinality.N - 1 && firstCardinality.W === secondCardinality.W) {
-    //   return true;
-    // }
-    //
-    // if (firstCardinality.W <= secondCardinality.W + 1 && firstCardinality.W >= secondCardinality.W - 1 && firstCardinality.N === secondCardinality.N) {
-    //
-    //   return true;
-    // }
+    if (firstCardinality.N <= secondCardinality.N + 1 && firstCardinality.N >= secondCardinality.N - 1 && firstCardinality.W === secondCardinality.W) {
+      return true;
+    }
+
+    if (firstCardinality.W <= secondCardinality.W + 1 && firstCardinality.W >= secondCardinality.W - 1 && firstCardinality.N === secondCardinality.N) {
+
+      return true;
+    }
 
 
-    return firstCardinality.W === secondCardinality.W && firstCardinality.N === secondCardinality.N;
+    return false;
   }
 }

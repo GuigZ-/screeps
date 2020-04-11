@@ -4,9 +4,9 @@ import {Hostiles, KILLER} from '../Constants';
 import {moveTo, resetMemory} from '../Utils/CreepUtil';
 import {Finder} from '../Utils/Finder';
 
-export class ToFlag implements WorkInterface {
+export class Visitor implements WorkInterface {
   work(creep: Creep): boolean {
-    if (!ToFlag.can(creep)) {
+    if (!Visitor.can(creep)) {
       return false;
     }
 
@@ -17,20 +17,12 @@ export class ToFlag implements WorkInterface {
     for (const flag of flags) {
       const hostiles: Hostiles[] = PositionUtil.closestHostiles(flag.pos);
 
-      if (hostiles.length > 0 && creep.memory.role !== KILLER) {
-        continue;
-      }
-
-      if (hostiles.length === 0 && creep.memory.role === KILLER) {
-        continue;
-      }
-
-      if (flag.room && creep.room.name === flag.room.name) {
+      if (hostiles.length > 0) {
         continue;
       }
 
       if (moveTo(creep, flag)) {
-        creep.memory.flag = flag.name;
+        creep.memory.visitorFlag = flag.name;
         return true;
       }
     }
@@ -45,6 +37,6 @@ export class ToFlag implements WorkInterface {
       return false;
     }
 
-    return !(creep.memory.working && !creep.memory.flag);
+    return !(creep.memory.working && !creep.memory.visitorFlag);
   }
 }

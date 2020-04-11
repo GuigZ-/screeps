@@ -1,4 +1,15 @@
-import {BUILDER, CLAIMER, HARVESTER, KILLER, REPAIRER, ROOM_BUILDER, UNDERTAKER, UPGRADER, WORKS} from './Constants';
+import {
+  BUILDER,
+  CLAIMER,
+  HARVESTER,
+  KILLER,
+  PICKUP,
+  REPAIRER,
+  ROOM_BUILDER,
+  UNDERTAKER,
+  UPGRADER, VISITOR,
+  WORKS
+} from './Constants';
 import {PositionUtil} from './Utils/PositionUtil';
 
 export class CreepCreator {
@@ -26,11 +37,19 @@ export class CreepCreator {
       case HARVESTER:
       case UPGRADER:
       case BUILDER:
+      case PICKUP:
       case UNDERTAKER:
         bodyPartRequired = [
           {body: CARRY, value: 35},
           {body: WORK, value: 35},
           {body: MOVE, value: 30}
+        ];
+        break;
+      case VISITOR:
+        bodyPartRequired = [
+          {body: CARRY, value: 20},
+          {body: WORK, value: 20},
+          {body: MOVE, value: 60}
         ];
         break;
       case REPAIRER:

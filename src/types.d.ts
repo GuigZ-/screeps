@@ -1,5 +1,6 @@
 interface SpawnMemory {
-  creeps: string[]
+  creeps: string[],
+  stats: Array<{progress: number, date: string, last: number}>
 }
 
 interface CreepMemory {
@@ -8,9 +9,11 @@ interface CreepMemory {
   claim: boolean;
   claimPos: RoomPosition;
   flag?: string;
+  visitorFlag?: string;
   harvest: boolean;
   renew: boolean;
   repair: boolean;
+  resource: boolean;
   role: import('./Constants').WORKS;
   room?: string;
   source?: Source

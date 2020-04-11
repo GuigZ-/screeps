@@ -1,6 +1,7 @@
 import {WorkInterface} from './WorkInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {RoomUtil} from '../Utils/RoomUtil';
 
 export class Harvest implements WorkInterface {
 
@@ -16,13 +17,15 @@ export class Harvest implements WorkInterface {
     const sources: Source[] = Harvest.getSources(creep);
 
     for (const source of sources) {
+      if (!RoomUtil.isNearestRoom(Game.spawns[creep.memory.spawnName].room.name, source.pos.roomName)) {
+        continue;
+      }
+
       const harvest: CreepActionReturnCode | ERR_NOT_FOUND | ERR_NOT_ENOUGH_RESOURCES = creep.harvest(source);
 
       if (workMoveTo(creep, harvest, source)) {
         creep.memory.harvest = true;
         return true;
-      } else {
-        console.log(`${creep.name} - ${harvest}`)
       }
     }
 

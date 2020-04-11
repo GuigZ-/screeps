@@ -2,6 +2,7 @@ import {WorkInterface} from './WorkInterface';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {StorageType} from '../Constants';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {RoomUtil} from '../Utils/RoomUtil';
 
 export class Transfer implements WorkInterface {
   work(creep: Creep): boolean {
@@ -15,6 +16,10 @@ export class Transfer implements WorkInterface {
 
     for (const storage of storages) {
       if (storage.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+        continue;
+      }
+
+      if (!RoomUtil.isNearestRoom(Game.spawns[creep.memory.spawnName].room.name, storage.pos.roomName)) {
         continue;
       }
 

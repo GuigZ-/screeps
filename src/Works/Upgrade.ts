@@ -1,6 +1,7 @@
 import {WorkInterface} from './WorkInterface';
 import {Finder} from '../Utils/Finder';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {RoomUtil} from '../Utils/RoomUtil';
 
 export class Upgrade implements WorkInterface {
   work(creep: Creep): boolean {
@@ -13,6 +14,10 @@ export class Upgrade implements WorkInterface {
     const controllers: StructureController[] = this.getControllers(creep);
 
     for (const controller of controllers) {
+      if (!RoomUtil.isNearestRoom(Game.spawns[creep.memory.spawnName].room.name, controller.pos.roomName)) {
+        continue;
+      }
+
       const upgrader: ScreepsReturnCode = creep.upgradeController(controller);
 
       if (workMoveTo(creep, upgrader, controller)) {

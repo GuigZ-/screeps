@@ -6,6 +6,8 @@ export const resetMemory = (creep: Creep): void => {
   creep.memory.attack = false;
   creep.memory.claim = false;
   creep.memory.harvest = false;
+  creep.memory.undertaker = false;
+  creep.memory.resource = false;
   creep.memory.room = undefined;
   creep.memory.flag = undefined;
 };

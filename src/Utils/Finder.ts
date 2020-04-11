@@ -1,4 +1,4 @@
-import {WORKS} from '../Constants';
+import {StorageType, WORKS} from '../Constants';
 import {PositionUtil} from './PositionUtil';
 
 export class Finder {
@@ -52,37 +52,49 @@ export class Finder {
     return creeps;
   }
 
-  public static findProtectedRoom(): Room[] {
-    const rooms: Room[] = [];
-    if (!Game.flags) {
-      return rooms;
+  public static findControllers(pos: RoomPosition): StructureController[] {
+    let controllers: StructureController[] = [];
+    for (const key in Game.rooms) {
+      const room: Room = Game.rooms[key];
+      const roomPosition: RoomPosition = new RoomPosition(25, 25, room.name);
+      // @ts-ignore
+      controllers = controllers.concat(roomPosition.findInRange(FIND_MY_STRUCTURES, 50, {
+        filter: structure => structure.structureType === STRUCTURE_CONTROLLER
+      }));
     }
 
-    for (const key in Game.flags) {
-      const flag: Flag = Game.flags[key];
-
-      if (!flag) {
-        continue;
-      }
-
-      if (PositionUtil.closestHostiles(flag.pos).length === 0) {
-        continue;
-      }
-
-      if (flag.room) {
-        rooms.push(flag.room);
-      }
-    }
-
-    return rooms;
+    return _.sortBy(controllers, s => pos.getRangeTo(s));
   }
 
-  public static findControllers(pos: RoomPosition): StructureController[] {
+  public static closestResources(pos: RoomPosition): Resource[] {
     // @ts-ignore
-    const controllers: StructureController[] = pos.findInRange(FIND_MY_STRUCTURES, 50, {
-      filter: structure => structure.structureType === STRUCTURE_CONTROLLER
+    const resources: Resource[] = pos.findInRange(FIND_DROPPED_RESOURCES, 50, {
+      filter: structure => structure.amount > 0
     });
 
-    return  _.sortBy(controllers, s => pos.getRangeTo(s));
+    return _.sortBy(resources, s => pos.getRangeTo(s));
+  }
+
+  public static getFlags(creep: Creep): Flag[] {
+    let flags: Flag[] = [];
+
+    if (creep.memory.flag && Object.keys(Game.flags)
+                                   .includes(creep.memory.flag)) {
+      const target: RoomObject = Game.flags[creep.memory.flag];
+
+      if (target instanceof Flag) {
+        flags.push(target);
+      }
+    }
+
+    if (Game.flags) {
+      for (const key in Game.flags) {
+        const flag: Flag = Game.flags[key];
+
+        flags.push(flag);
+      }
+    }
+
+    return _.sortBy(flags, f => creep.pos.getRangeTo(f.pos));
   }
 }

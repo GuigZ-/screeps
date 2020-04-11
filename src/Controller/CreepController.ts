@@ -1,5 +1,16 @@
 import {ControllerInterface} from './ControllerInterface';
-import {BUILDER, CLAIMER, HARVESTER, KILLER, REPAIRER, ROOM_BUILDER, UNDERTAKER, UPGRADER} from '../Constants';
+import {
+  BUILDER,
+  CLAIMER,
+  HARVESTER,
+  KILLER,
+  PICKUP,
+  REPAIRER,
+  ROOM_BUILDER,
+  UNDERTAKER,
+  UPGRADER,
+  VISITOR
+} from '../Constants';
 import {SpawnController} from './SpawnController';
 import {Harvest} from '../Works/Harvest';
 import {WorkInterface} from '../Works/WorkInterface';
@@ -13,6 +24,8 @@ import {ToFlag} from '../Works/ToFlag';
 import {RoomBuilder} from '../Works/RoomBuilder';
 import {resetMemory} from '../Utils/CreepUtil';
 import {Undertaker} from '../Works/Undertaker';
+import {Pickup} from '../Works/Pickup';
+import {Visitor} from '../Works/Visitor';
 
 export class CreepController implements ControllerInterface {
   private readonly creepName: string;
@@ -31,16 +44,20 @@ export class CreepController implements ControllerInterface {
     const flag: ToFlag = new ToFlag();
     const roomBuilder: RoomBuilder = new RoomBuilder();
     const undertaker: Undertaker = new Undertaker();
+    const pickUp: Pickup = new Pickup();
+    const visitor: Visitor = new Visitor();
 
     this.worksByType = {
       [BUILDER]: [harvest, build, transfer, upgrade],
-      [CLAIMER]: [flag,  claim, harvest,  build,  transfer],
+      [CLAIMER]: [flag, claim, harvest, build, transfer],
       [HARVESTER]: [harvest, transfer, build, upgrade],
       [KILLER]: [attack, flag, harvest, build, transfer, repair, upgrade],
+      [PICKUP]: [pickUp, harvest, repair, build, transfer, upgrade],
       [REPAIRER]: [harvest, repair, build, transfer, upgrade],
       [ROOM_BUILDER]: [roomBuilder, harvest, build, transfer],
       [UNDERTAKER]: [undertaker, harvest, transfer, build, upgrade],
       [UPGRADER]: [harvest, upgrade, transfer, build],
+      [VISITOR]: [visitor, harvest, transfer, upgrade],
     }
   }
 

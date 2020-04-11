@@ -1,43 +1,71 @@
 import {Hostiles, StorageType, UndertakerSource} from '../Constants';
 import {isRepairable} from './RepairUtil';
+import {RoomUtil} from './RoomUtil';
 
 export class PositionUtil {
   public static closestSources(pos: RoomPosition, roomSearch: boolean = false): Source[] {
-    const sources: Source[] = pos.findInRange(
-      FIND_SOURCES,
-      50,
-      {filter: s => s.energy > 0 && (!roomSearch || s.room.name === pos.roomName)}
-    );
+    let sources: Source[] = [];
+
+    for (const key in Game.rooms) {
+      const room: Room = Game.rooms[key];
+
+      if (!RoomUtil.isNearestRoom(pos.roomName, room.name)) {
+        continue;
+      }
+
+      if (roomSearch && room.name != pos.roomName) {
+        continue;
+      }
+
+      const roomPosition: RoomPosition = new RoomPosition(25, 25, room.name);
+
+      sources = sources.concat(roomPosition.findInRange(
+        FIND_SOURCES,
+        50,
+        {filter: s => s.energy > 0 && (!roomSearch || s.room.name === roomPosition.roomName)}
+      ));
+    }
+
     return _.sortBy(sources, s => pos.getRangeTo(s));
   }
 
-  public static closestUndertakerSources(pos: RoomPosition, roomSearch: boolean = false): UndertakerSource[] {
+  public static closestUndertakerSources(pos: RoomPosition): UndertakerSource[] {
     let sources: UndertakerSource[] = pos.findInRange(
       FIND_RUINS,
       50,
-      {filter: s => s.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && (!roomSearch || (s.room && s.room.name === pos.roomName))}
+      {filter: s => s.store.getUsedCapacity(RESOURCE_ENERGY) > 0}
     );
 
     sources = sources.concat(pos.findInRange(
       FIND_TOMBSTONES,
       50,
-      {filter: s => s.store.getFreeCapacity(RESOURCE_ENERGY) > 0 && (!roomSearch || (s.room && s.room.name === pos.roomName))}
+      {filter: s => s.store.getUsedCapacity(RESOURCE_ENERGY) > 0}
     ));
 
     return _.sortBy(sources, s => pos.getRangeTo(s));
   }
 
   public static closestStorages(pos: RoomPosition, freeCapacity: boolean = false): StorageType[] {
-    // @ts-ignore
-    const storages: StorageType[] = pos.findInRange(
-      FIND_MY_STRUCTURES,
-      50,
-      {
-        filter: s => [STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_TOWER].includes(
-          // @ts-ignore
-          s.structureType) && (!freeCapacity || s.store.getFreeCapacity(RESOURCE_ENERGY) > 0)
+    let storages: StorageType[] = [];
+    for (const key in Game.rooms) {
+      const room: Room = Game.rooms[key];
+
+      if (!RoomUtil.isNearestRoom(pos.roomName, room.name)) {
+        continue;
       }
-    );
+
+      const roomPosition: RoomPosition = new RoomPosition(25, 25, room.name);
+      // @ts-ignore
+      storages = storages.concat(roomPosition.findInRange(
+        FIND_MY_STRUCTURES,
+        50,
+        {
+          filter: s => [STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_TOWER].includes(
+            // @ts-ignore
+            s.structureType) && (!freeCapacity || s.store.getFreeCapacity(RESOURCE_ENERGY) > 0)
+        }
+      ));
+    }
 
     return _.sortBy(storages, s => pos.getRangeTo(s));
   }
@@ -85,7 +113,6 @@ export class PositionUtil {
   }
 
   static closestStructureToRepair(pos: RoomPosition): AnyStructure[] {
-    const rate: number = 0.01;
     let anyOwnedStructures: AnyStructure[] = Game.rooms[pos.roomName].find(FIND_MY_STRUCTURES, {
       filter: s => isRepairable(s)
     });

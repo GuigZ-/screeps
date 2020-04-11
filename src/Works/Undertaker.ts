@@ -15,7 +15,7 @@ export class Undertaker implements WorkInterface {
     resetMemory(creep);
 
     const sources: UndertakerSource[] = Undertaker.getSources(creep);
-console.log(`${creep.name} - undertaker - ${sources.length}`)
+
     for (const source of sources) {
       const withdraw: ScreepsReturnCode = creep.withdraw(source, RESOURCE_ENERGY);
 
@@ -31,7 +31,7 @@ console.log(`${creep.name} - undertaker - ${sources.length}`)
   }
 
   private static can(creep: Creep): boolean {
-    if (creep.memory.working && !creep.memory.undertaker) {
+    if (creep.memory.working && !creep.memory.undertaker && !creep.memory.harvest) {
       return false;
     }
 

@@ -4,12 +4,12 @@ import {
   BUILDER,
   CLAIMER,
   HARVESTER,
-  KILLER,
+  KILLER, PICKUP,
   REPAIRER,
   ROOM_BUILDER,
   StorageType,
   UNDERTAKER,
-  UPGRADER
+  UPGRADER, VISITOR
 } from '../Constants';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {Finder} from '../Utils/Finder';
@@ -23,10 +23,37 @@ export class SpawnController implements ControllerInterface {
   }
 
   public loop(): void {
+    const d: Date = new Date();
+
     const spawn: StructureSpawn = Game.spawns[this.spawnName];
 
     if (!spawn || !spawn.my) {
       return;
+    }
+
+    if (!spawn.memory.stats) {
+      spawn.memory.stats = [];
+    }
+
+    if (d.getUTCSeconds() <= 1 && d.getUTCMinutes() === 0) {
+      // @ts-ignore
+      const progress: number = spawn.room.controller.progress;
+
+
+      if (spawn.memory.stats.length >= 2) {
+        spawn.memory.stats[2] = spawn.memory.stats[1];
+      }
+
+      if (spawn.memory.stats.length >= 1) {
+        spawn.memory.stats[1] = spawn.memory.stats[0];
+      }
+
+      spawn.memory.stats[0] = {
+        progress: progress,
+        date: `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`,
+        // @ts-ignore
+        last: (spawn.memory.stats.length >= 1 ? progress - spawn.memory.stats[1].progress : 0)
+      };
     }
 
     if (spawn.memory.creeps) {
@@ -110,8 +137,12 @@ export class SpawnController implements ControllerInterface {
     } else if (rooms.length) {
       // @ts-ignore
       CreepCreator.build(spawn, ROOM_BUILDER, {memory: {room: rooms[0].name}});
-    } else if (!creepNumberByType[UNDERTAKER]) {
+    } else if (!creepNumberByType[UNDERTAKER] && PositionUtil.closestUndertakerSources(spawn.pos)) {
       CreepCreator.build(spawn, UNDERTAKER);
+    } else if (!creepNumberByType[PICKUP] && Finder.closestResources(spawn.pos).length) {
+      CreepCreator.build(spawn, PICKUP);
+    } else if (!creepNumberByType[VISITOR]) {
+      CreepCreator.build(spawn, VISITOR);
     }
 
     const ownRooms: Room[] = Finder.findOwnRooms();

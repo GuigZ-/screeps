@@ -46,7 +46,7 @@ export class Harvest implements WorkInterface {
     let targets: Source[] = [];
 
     if (creep.memory.source) {
-      const memorySource: Source | null = Game.getObjectById(creep.memory.source.id);
+      const memorySource: Source | null = Game.getObjectById(creep.memory.source);
 
       if (memorySource instanceof Source && memorySource.energy > 0) {
         targets.push(memorySource);

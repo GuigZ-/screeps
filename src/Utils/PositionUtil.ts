@@ -13,7 +13,7 @@ export class PositionUtil {
         continue;
       }
 
-      if (roomSearch && room.name != pos.roomName) {
+      if (roomSearch && room.name !== pos.roomName) {
         continue;
       }
 

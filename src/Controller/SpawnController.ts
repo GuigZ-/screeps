@@ -1,5 +1,3 @@
-import {ControllerInterface} from './ControllerInterface';
-import {CreepCreator} from '../CreepCreator';
 import {
   BUILDER,
   CLAIMER,
@@ -11,8 +9,10 @@ import {
   UNDERTAKER,
   UPGRADER, VISITOR
 } from '../Constants';
-import {PositionUtil} from '../Utils/PositionUtil';
+import {CreepCreator} from '../CreepCreator';
 import {Finder} from '../Utils/Finder';
+import {PositionUtil} from '../Utils/PositionUtil';
+import {ControllerInterface} from './ControllerInterface';
 
 export class SpawnController implements ControllerInterface {
   public static forceReload: boolean = false;
@@ -49,10 +49,10 @@ export class SpawnController implements ControllerInterface {
       }
 
       spawn.memory.stats[0] = {
-        progress: progress,
         date: `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`,
         // @ts-ignore
-        last: (spawn.memory.stats.length >= 1 ? progress - spawn.memory.stats[1].progress : 0)
+        last: (spawn.memory.stats.length >= 1 ? progress - spawn.memory.stats[1].progress : 0),
+        progress
       };
     }
 
@@ -70,6 +70,7 @@ export class SpawnController implements ControllerInterface {
 
     if (spawn.spawning && spawn.spawning.remainingTime <= 1) {
       SpawnController.forceReload = true;
+      CreepCreator.inProgress = false;
     } else if (!spawn.spawning) {
       this.manageCreep(spawn);
     }
@@ -78,7 +79,7 @@ export class SpawnController implements ControllerInterface {
       return;
     }
 
-    this.buildExtension(spawn);
+    this.buildExtensions(spawn);
     this.buildRoad(spawn);
     this.buildTower(spawn);
   }
@@ -193,62 +194,120 @@ export class SpawnController implements ControllerInterface {
     }
   }
 
-  private buildExtension(spawn: StructureSpawn): void {
+  private buildExtensions(spawn: StructureSpawn): void {
     const room: Room = spawn.room;
-    const targets: (Source | StructureSpawn)[] = room.find(FIND_SOURCES);
+    const targets: Array<Source | StructureSpawn> = room.find(FIND_SOURCES);
     targets.concat(room.find(FIND_MY_SPAWNS));
 
-    const range: number = 3 + (room.controller ? room.controller.level - 1 : 1);
 
     targets.forEach(s => {
-      const {x: posX, y: posY} = s.pos;
-      for (let i = Math.max(0, posX - range); i < Math.min(49, posX + range); i++) {
-        if (i === posX || i % 2 !== 0 || (i > posX - 3 && i < posX + 3) || Math.abs(i - posX) <= 2) {
-          continue;
+
+      const {x: baseX, y: baseY} = s.pos;
+
+      for (let x = 1; x <= (room.controller ? room.controller.level : 1); x++) {
+
+        const range: number = 2 * x;
+        const minX: number = baseX - range;
+        const maxX: number = baseX + range;
+        const minY: number = baseY - range;
+        const maxY: number = baseY + range;
+
+        const rowX: number[] = [minX, maxX];
+        const rowY: number[] = [minY, maxY];
+
+        for (const posX of rowX) {
+          if (posX === baseX) {
+            continue;
+          }
+
+          if (posX < 0 || posX > 49) {
+            continue;
+          }
+
+          for (let i = minY; i <= maxY; i++) {
+            if (i === baseY) {
+              continue;
+            }
+
+            if (i < 0 || i > 49)
+            {
+              continue;
+            }
+
+            const pos: RoomPosition = new RoomPosition(posX, i, s.pos.roomName);
+            if (SpawnController.buildExtension(pos)) {
+              return true;
+            }
+          }
         }
-
-        for (let j = Math.max(0, posY - range); j < Math.min(49, posY + range); j++) {
-          if (j === posY || (j > posY - 3 && j < posY + 3) || Math.abs(j - posY) <= 2) {
+        for (const posY of rowY) {
+          if (posY === baseX) {
             continue;
           }
 
-          const pos: RoomPosition = new RoomPosition(i, j, room.name);
 
-          if (room.lookAt(pos.x - 1, pos.y)
-                  .filter(e => e.terrain === 'wall').length
-            && room.lookAt(pos.x + 1, pos.y)
-                   .filter(e => e.terrain === 'wall').length) {
+          if (posY < 0 || posY > 49) {
             continue;
           }
 
-          if (room.lookAt(pos.x, pos.y - 1)
-                  .filter(e => e.terrain === 'wall').length
-            && room.lookAt(pos.x, pos.y + 1)
-                   .filter(e => e.terrain === 'wall').length) {
-            continue;
-          }
+          for (let i = minX; i <= maxX; i++) {
+            if (i === baseX) {
+              continue;
+            }
 
-          if (room.lookAt(pos.x - 1, pos.y - 1)
-                  .filter(e => e.terrain === 'wall').length
-            && room.lookAt(pos.x + 1, pos.y + 1)
-                   .filter(e => e.terrain === 'wall').length) {
-            continue;
-          }
+            if (i < 0 || i > 49)
+            {
+              continue;
+            }
 
-          if (room.lookAt(pos.x - 1, pos.y + 1)
-                  .filter(e => e.terrain === 'wall').length
-            && room.lookAt(pos.x + 1, pos.y - 1)
-                   .filter(e => e.terrain === 'wall').length) {
-            continue;
-          }
-
-          if (room.lookAt(pos)
-                  .filter(e => e.terrain === 'plain' || e.terrain === 'swamp').length) {
-            room.createConstructionSite(i, j, STRUCTURE_EXTENSION);
+            const pos: RoomPosition = new RoomPosition(i, posY, s.pos.roomName);
+            if (SpawnController.buildExtension(pos)) {
+              return true;
+            }
           }
         }
       }
+      return false;
     });
+  }
+
+  private static buildExtension(pos: RoomPosition): boolean {
+    const room: Room = Game.rooms[pos.roomName];
+    if (room.lookAt(pos).filter(e => e.terrain !== 'plain' && e.terrain !== 'swamp').length) {
+      return false;
+    }
+
+    if (room.lookAt(pos.x - 1, pos.y)
+        .filter(e => e.terrain === 'wall').length
+      && room.lookAt(pos.x + 1, pos.y)
+        .filter(e => e.terrain === 'wall').length) {
+      return false;
+    }
+
+    if (room.lookAt(pos.x, pos.y - 1)
+        .filter(e => e.terrain === 'wall').length
+      && room.lookAt(pos.x, pos.y + 1)
+        .filter(e => e.terrain === 'wall').length) {
+      return false;
+    }
+
+    if (room.lookAt(pos.x - 1, pos.y - 1)
+        .filter(e => e.terrain === 'wall').length
+      && room.lookAt(pos.x + 1, pos.y + 1)
+        .filter(e => e.terrain === 'wall').length) {
+      return false;
+    }
+
+    if (room.lookAt(pos.x - 1, pos.y + 1)
+        .filter(e => e.terrain === 'wall').length
+      && room.lookAt(pos.x + 1, pos.y - 1)
+        .filter(e => e.terrain === 'wall').length) {
+      return false;
+    }
+
+    const constructionSite = room.createConstructionSite(pos, STRUCTURE_EXTENSION);
+
+    return constructionSite === OK;
   }
 
   private buildRoad(spawn: StructureSpawn): void {
@@ -257,25 +316,25 @@ export class SpawnController implements ControllerInterface {
     }
 
     spawn.room.find(FIND_MY_STRUCTURES, {filter: structure => structure.my})
-         .forEach(structure => {
-           const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
-           path.forEach(pos => pos.look()
-                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
-         });
+      .forEach(structure => {
+        const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
+        path.forEach(pos => pos.look()
+          .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+      });
 
     spawn.room.find(FIND_STRUCTURES, {filter: structure => structure.structureType === STRUCTURE_RAMPART})
-         .forEach(structure => {
-           const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
-           path.forEach(pos => pos.look()
-                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
-         });
+      .forEach(structure => {
+        const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
+        path.forEach(pos => pos.look()
+          .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+      });
 
     spawn.room.find(FIND_SOURCES_ACTIVE)
-         .forEach((source: Source) => {
-           const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, source.pos);
-           path.forEach(pos => pos.look()
-                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
-         });
+      .forEach((source: Source) => {
+        const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, source.pos);
+        path.forEach(pos => pos.look()
+          .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+      });
 
     const storageStructures: StorageType[] = PositionUtil.closestStorages(spawn.pos);
 
@@ -288,7 +347,7 @@ export class SpawnController implements ControllerInterface {
 
       const {path}: PathFinderPath = PositionUtil.pathRoad(s.pos, source.pos);
       path.forEach(pos => pos.look()
-                             .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+        .filter((element: LookAtResult) => element.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
     });
   }
 

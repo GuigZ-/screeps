@@ -16,7 +16,7 @@ interface CreepMemory {
   resource: boolean;
   role: import('./Constants').WORKS;
   room?: string;
-  source?: Source
+  source?: Id<Source>
   spawnName: string;
   target?: Id<any>;
   transfer: boolean;

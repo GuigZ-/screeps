@@ -14,12 +14,17 @@ import {PositionUtil} from './Utils/PositionUtil';
 
 export class CreepCreator {
   private static defaultBody: BodyPartConstant[] = [MOVE, CARRY, WORK];
+  public static inProgress: boolean = false;
 
   private static buildName(spawn: StructureSpawn, work: WORKS, counter: number = 0): string {
     return `${spawn.room.name}_${work}_${counter}`;
   }
 
   public static build(spawn: StructureSpawn, work: WORKS, opts: SpawnOptions = {}): void {
+    if (CreepCreator.inProgress) {
+      return;
+    }
+
     const bodyPartNumber: number = 50;
     const bodyBasePart: number = CreepCreator.defaultBody.length;
     const freePart: number = bodyPartNumber - bodyBasePart;
@@ -40,9 +45,9 @@ export class CreepCreator {
       case PICKUP:
       case UNDERTAKER:
         bodyPartRequired = [
-          {body: CARRY, value: 35},
-          {body: WORK, value: 35},
-          {body: MOVE, value: 30}
+          {body: CARRY, value: 30},
+          {body: WORK, value: 30},
+          {body: MOVE, value: 40}
         ];
         break;
       case VISITOR:
@@ -113,8 +118,8 @@ export class CreepCreator {
           {
             memory: {
               role: work,
-              spawnName: spawn.name,
               source: source ? source.id : null,
+              spawnName: spawn.name,
               ...opts.memory
             },
           }
@@ -123,6 +128,7 @@ export class CreepCreator {
       } while (spawnCreep === ERR_NAME_EXISTS);
 
       if (spawnCreep === OK) {
+        CreepCreator.inProgress = true;
         if (!spawn.memory.creeps) {
           spawn.memory.creeps = [];
         }

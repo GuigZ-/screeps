@@ -1,4 +1,4 @@
-type Cardinality = { W: number, N: number };
+interface Cardinality { W: number, N: number }
 
 export class RoomUtil {
   private static getCardinality(roomName: string): Cardinality {
@@ -13,12 +13,12 @@ export class RoomUtil {
   }
 
   public static isNearestRoom(firstRoomName: string, secondRoomName: string, log: boolean = false): boolean {
+    if (firstRoomName === 'sim' || secondRoomName === 'sim') {
+      return true;
+    }
+
     const firstCardinality: Cardinality = RoomUtil.getCardinality(firstRoomName);
     const secondCardinality: Cardinality = RoomUtil.getCardinality(secondRoomName);
-
-    if (log) {
-      console.log(JSON.stringify(firstCardinality), JSON.stringify(secondCardinality));
-    }
 
     if (firstCardinality.N <= secondCardinality.N + 1 && firstCardinality.N >= secondCardinality.N - 1 && firstCardinality.W === secondCardinality.W) {
       return true;

@@ -39,7 +39,7 @@ export class Finder {
     return rooms;
   }
 
-  public static findCreepByType(work: WORKS | undefined = undefined): Creep[] {
+  public static findCreepByType(work?: WORKS): Creep[] {
     const creeps: Creep[] = [];
     for (const key in Game.creeps) {
       const creep: Creep = Game.creeps[key];
@@ -76,10 +76,10 @@ export class Finder {
   }
 
   public static getFlags(creep: Creep): Flag[] {
-    let flags: Flag[] = [];
+    const flags: Flag[] = [];
 
     if (creep.memory.flag && Object.keys(Game.flags)
-                                   .includes(creep.memory.flag)) {
+      .includes(creep.memory.flag)) {
       const target: RoomObject = Game.flags[creep.memory.flag];
 
       if (target instanceof Flag) {

@@ -1,11 +1,11 @@
-import {WorkInterface} from './WorkInterface';
-import {PositionUtil} from '../Utils/PositionUtil';
 import {Hostiles, KILLER} from '../Constants';
 import {moveTo, resetMemory} from '../Utils/CreepUtil';
 import {Finder} from '../Utils/Finder';
+import {PositionUtil} from '../Utils/PositionUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class ToFlag implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!ToFlag.can(creep)) {
       return false;
     }

@@ -1,11 +1,10 @@
-import {WorkInterface} from './WorkInterface';
-import {PositionUtil} from '../Utils/PositionUtil';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {Finder} from '../Utils/Finder';
+import {WorkInterface} from './WorkInterface';
 
 export class Pickup implements WorkInterface {
 
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Pickup.can(creep)) {
       resetMemory(creep);
 
@@ -34,7 +33,7 @@ export class Pickup implements WorkInterface {
   }
 
   private static getSources(creep: Creep): Resource[] {
-    let targets: Resource[] = [];
+    const targets: Resource[] = [];
 
     if (creep.memory.target) {
       const memoryTarget: RoomObject = Game.getObjectById(creep.memory.target);

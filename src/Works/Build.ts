@@ -1,8 +1,8 @@
-import {WorkInterface} from './WorkInterface';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Build implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Build.can(creep)) {
       return false;
     }

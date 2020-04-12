@@ -1,11 +1,11 @@
-import {WorkInterface} from './WorkInterface';
-import {PositionUtil} from '../Utils/PositionUtil';
-import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {UndertakerSource} from '../Constants';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {PositionUtil} from '../Utils/PositionUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Undertaker implements WorkInterface {
 
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Undertaker.can(creep)) {
       resetMemory(creep);
 
@@ -39,7 +39,7 @@ export class Undertaker implements WorkInterface {
   }
 
   private static getSources(creep: Creep): UndertakerSource[] {
-    let targets: UndertakerSource[] = [];
+    const targets: UndertakerSource[] = [];
 
     if (creep.memory.target) {
       const memoryTarget: RoomObject = Game.getObjectById(creep.memory.target);

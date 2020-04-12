@@ -125,6 +125,9 @@ export class SpawnController implements ControllerInterface {
       return;
     }
 
+    const undertakerSourcesLength: number = PositionUtil.closestUndertakerSources(spawn.pos).length;
+    const closestResourcesLength: number = Finder.closestResources(spawn.pos).length;
+
     const rooms: Room[] = Finder.findRoomsToBuild();
     if (!creepNumberByType[UPGRADER] || creepNumberByType[UPGRADER] < controllerNumber * 2) {
       CreepCreator.build(spawn, UPGRADER);
@@ -138,9 +141,9 @@ export class SpawnController implements ControllerInterface {
     } else if (rooms.length) {
       // @ts-ignore
       CreepCreator.build(spawn, ROOM_BUILDER, {memory: {room: rooms[0].name}});
-    } else if (!creepNumberByType[UNDERTAKER] && PositionUtil.closestUndertakerSources(spawn.pos)) {
+    } else if ((!creepNumberByType[UNDERTAKER] && undertakerSourcesLength) || undertakerSourcesLength > creepNumberByType[UNDERTAKER]) {
       CreepCreator.build(spawn, UNDERTAKER);
-    } else if (!creepNumberByType[PICKUP] && Finder.closestResources(spawn.pos).length) {
+    } else if ((!creepNumberByType[PICKUP] && closestResourcesLength) || closestResourcesLength > creepNumberByType[PICKUP]) {
       CreepCreator.build(spawn, PICKUP);
     } else if (!creepNumberByType[VISITOR]) {
       CreepCreator.build(spawn, VISITOR);
@@ -153,7 +156,7 @@ export class SpawnController implements ControllerInterface {
       flags: for (const key in flags) {
         const flag: Flag = flags[key];
 
-        if (!flag) {
+        if (!flag || flag.color !== COLOR_WHITE) {
           continue;
         }
 
@@ -229,8 +232,7 @@ export class SpawnController implements ControllerInterface {
               continue;
             }
 
-            if (i < 0 || i > 49)
-            {
+            if (i < 0 || i > 49) {
               continue;
             }
 
@@ -255,8 +257,7 @@ export class SpawnController implements ControllerInterface {
               continue;
             }
 
-            if (i < 0 || i > 49)
-            {
+            if (i < 0 || i > 49) {
               continue;
             }
 

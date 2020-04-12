@@ -45,9 +45,9 @@ export class CreepCreator {
       case PICKUP:
       case UNDERTAKER:
         bodyPartRequired = [
-          {body: CARRY, value: 30},
-          {body: WORK, value: 30},
-          {body: MOVE, value: 40}
+          {body: CARRY, value: 25},
+          {body: WORK, value: 25},
+          {body: MOVE, value: 50}
         ];
         break;
       case VISITOR:

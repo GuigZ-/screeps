@@ -1,10 +1,10 @@
-import {WorkInterface} from './WorkInterface';
-import {PositionUtil} from '../Utils/PositionUtil';
 import {Hostiles} from '../Constants';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {PositionUtil} from '../Utils/PositionUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Attack implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Attack.can(creep)) {
       return false;
     }
@@ -32,7 +32,7 @@ export class Attack implements WorkInterface {
   }
 
   private static getHostiles(creep: Creep): Hostiles[] {
-    let hostiles: Hostiles[] = [];
+    const hostiles: Hostiles[] = [];
 
     if (creep.memory.target) {
       const target: RoomObject = Game.getObjectById(creep.memory.target);

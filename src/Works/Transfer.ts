@@ -1,11 +1,11 @@
-import {WorkInterface} from './WorkInterface';
-import {PositionUtil} from '../Utils/PositionUtil';
 import {StorageType} from '../Constants';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {PositionUtil} from '../Utils/PositionUtil';
 import {RoomUtil} from '../Utils/RoomUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Transfer implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Transfer.can(creep)) {
       return false;
     }
@@ -44,7 +44,7 @@ export class Transfer implements WorkInterface {
   }
 
   private getStorages(creep: Creep): StorageType[] {
-    let storages: StorageType[] = [];
+    const storages: StorageType[] = [];
 
     if (creep.memory.target) {
       const target: RoomObject = Game.getObjectById(creep.memory.target);
@@ -52,7 +52,7 @@ export class Transfer implements WorkInterface {
 
       // @ts-ignore : target.store not exists for RoomObject
       if (isStorageType && target.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
-        storages.push(<StorageType>target);
+        storages.push(target as StorageType);
       }
     }
 

@@ -1,10 +1,10 @@
-import {WorkInterface} from './WorkInterface';
-import {Finder} from '../Utils/Finder';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {Finder} from '../Utils/Finder';
 import {RoomUtil} from '../Utils/RoomUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Upgrade implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Upgrade.can(creep)) {
       return false;
     }
@@ -40,7 +40,7 @@ export class Upgrade implements WorkInterface {
   }
 
   private getControllers(creep: Creep): StructureController[] {
-    let storages: StructureController[] = [];
+    const storages: StructureController[] = [];
 
     if (creep.memory.target) {
       const target: RoomObject = Game.getObjectById(creep.memory.target);

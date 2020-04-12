@@ -1,11 +1,11 @@
-import {WorkInterface} from './WorkInterface';
-import {PositionUtil} from '../Utils/PositionUtil';
 import {Hostiles, KILLER} from '../Constants';
 import {moveTo, resetMemory} from '../Utils/CreepUtil';
 import {Finder} from '../Utils/Finder';
+import {PositionUtil} from '../Utils/PositionUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Visitor implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Visitor.can(creep)) {
       return false;
     }
@@ -15,6 +15,10 @@ export class Visitor implements WorkInterface {
     const flags: Flag[] = Finder.getFlags(creep);
 
     for (const flag of flags) {
+      if (flag.color !== COLOR_YELLOW) {
+        continue;
+      }
+      
       const hostiles: Hostiles[] = PositionUtil.closestHostiles(flag.pos);
 
       if (hostiles.length > 0) {

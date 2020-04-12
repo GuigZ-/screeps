@@ -1,11 +1,11 @@
-import {WorkInterface} from './WorkInterface';
-import {PositionUtil} from '../Utils/PositionUtil';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {PositionUtil} from '../Utils/PositionUtil';
 import {RoomUtil} from '../Utils/RoomUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Harvest implements WorkInterface {
 
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Harvest.can(creep)) {
       resetMemory(creep);
 
@@ -43,7 +43,7 @@ export class Harvest implements WorkInterface {
   }
 
   private static getSources(creep: Creep): Source[] {
-    let targets: Source[] = [];
+    const targets: Source[] = [];
 
     if (creep.memory.source) {
       const memorySource: Source | null = Game.getObjectById(creep.memory.source);

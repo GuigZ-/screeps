@@ -1,10 +1,10 @@
-import {WorkInterface} from './WorkInterface';
+import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {isRepairable} from '../Utils/RepairUtil';
-import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
+import {WorkInterface} from './WorkInterface';
 
 export class Repair implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!Repair.can(creep)) {
       return false;
     }
@@ -36,7 +36,7 @@ export class Repair implements WorkInterface {
   }
 
   private static getStructures(creep: Creep): Structure[] {
-    let constructionSites: Structure[] = [];
+    const constructionSites: Structure[] = [];
 
     if (creep.memory.target) {
       const target: RoomObject = Game.getObjectById(creep.memory.target);

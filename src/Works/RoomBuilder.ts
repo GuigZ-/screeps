@@ -1,9 +1,9 @@
-import {WorkInterface} from './WorkInterface';
-import {Finder} from '../Utils/Finder';
 import {moveTo, resetMemory} from '../Utils/CreepUtil';
+import {Finder} from '../Utils/Finder';
+import {WorkInterface} from './WorkInterface';
 
 export class RoomBuilder implements WorkInterface {
-  work(creep: Creep): boolean {
+  public work(creep: Creep): boolean {
     if (!RoomBuilder.can(creep)) {
       return false;
     }

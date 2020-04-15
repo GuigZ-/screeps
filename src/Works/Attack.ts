@@ -28,7 +28,7 @@ export class Attack implements WorkInterface {
   }
 
   private static can(creep: Creep): boolean {
-    return !(creep.memory.working && !creep.memory.attack);
+    return Attack.getHostiles(creep).length > 0;
   }
 
   private static getHostiles(creep: Creep): Hostiles[] {

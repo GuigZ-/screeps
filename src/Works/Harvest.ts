@@ -7,8 +7,6 @@ export class Harvest implements WorkInterface {
 
   public work(creep: Creep): boolean {
     if (!Harvest.can(creep)) {
-      resetMemory(creep);
-
       return false;
     }
 
@@ -28,6 +26,7 @@ export class Harvest implements WorkInterface {
         return true;
       }
     }
+      console.log(`${creep.name}`);
 
     resetMemory(creep);
 

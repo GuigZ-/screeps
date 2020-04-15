@@ -1,5 +1,6 @@
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {WorkInterface} from './WorkInterface';
+import {PICKUP} from '../Constants';
 
 export class Build implements WorkInterface {
   public work(creep: Creep): boolean {
@@ -13,6 +14,7 @@ export class Build implements WorkInterface {
 
     for (const constructionSite of constructionSites) {
       const build: CreepActionReturnCode | ERR_NOT_ENOUGH_RESOURCES | ERR_RCL_NOT_ENOUGH = creep.build(constructionSite);
+
 
       if (workMoveTo(creep, build, constructionSite)) {
         creep.memory.build = true;
@@ -44,7 +46,7 @@ export class Build implements WorkInterface {
       }
     }
 
-    const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_SPAWN, STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_WALL, STRUCTURE_ROAD, STRUCTURE_RAMPART];
+    const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_WALL, STRUCTURE_RAMPART, STRUCTURE_ROAD];
 
     for (const type of sortByTypes) {
       const targets = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {

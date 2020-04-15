@@ -12,7 +12,7 @@ export class ToFlag implements WorkInterface {
 
     resetMemory(creep);
 
-    const flags: Flag[] = Finder.getFlags(creep);
+    const flags: Flag[] = Finder.getFlags(creep.pos);
 
     for (const flag of flags) {
       const hostiles: Hostiles[] = PositionUtil.closestHostiles(flag.pos);

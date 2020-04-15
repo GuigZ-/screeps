@@ -4,15 +4,15 @@ import {PositionUtil} from '../Utils/PositionUtil';
 import {RoomUtil} from '../Utils/RoomUtil';
 import {WorkInterface} from './WorkInterface';
 
-export class Transfer implements WorkInterface {
+export class TransferEnergy implements WorkInterface {
   public work(creep: Creep): boolean {
-    if (!Transfer.can(creep)) {
+    if (!TransferEnergy.can(creep)) {
       return false;
     }
 
     resetMemory(creep);
 
-    const storages: StorageType[] = this.getStorages(creep);
+    const storages: StorageType[] = this.getEnergyStorages(creep);
 
     for (const storage of storages) {
       if (storage.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
@@ -40,10 +40,10 @@ export class Transfer implements WorkInterface {
       return false;
     }
 
-    return creep.store.getCapacity(RESOURCE_ENERGY) !== creep.store.getFreeCapacity(RESOURCE_ENERGY);
+    return creep.store.getCapacity() !== creep.store.getFreeCapacity();
   }
 
-  private getStorages(creep: Creep): StorageType[] {
+  private getEnergyStorages(creep: Creep): StorageType[] {
     const storages: StorageType[] = [];
 
     if (creep.memory.target) {
@@ -51,11 +51,11 @@ export class Transfer implements WorkInterface {
       const isStorageType = target instanceof StructureSpawn || target instanceof StructureSpawn || target instanceof StructureSpawn;
 
       // @ts-ignore : target.store not exists for RoomObject
-      if (isStorageType && target.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      if (isStorageType && target.store.getFreeCapacity() > 0) {
         storages.push(target as StorageType);
       }
     }
 
-    return storages.concat(PositionUtil.closestStorages(creep.pos));
+    return storages.concat(PositionUtil.closestEnergyStorages(creep.pos));
   }
 }

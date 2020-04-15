@@ -1,4 +1,4 @@
-import {StorageType, WORKS} from '../Constants';
+import {Hostiles, StorageType, WORKS} from '../Constants';
 import {PositionUtil} from './PositionUtil';
 
 export class Finder {
@@ -75,17 +75,8 @@ export class Finder {
     return _.sortBy(resources, s => pos.getRangeTo(s));
   }
 
-  public static getFlags(creep: Creep): Flag[] {
+  public static getFlags(pos: RoomPosition): Flag[] {
     const flags: Flag[] = [];
-
-    if (creep.memory.flag && Object.keys(Game.flags)
-      .includes(creep.memory.flag)) {
-      const target: RoomObject = Game.flags[creep.memory.flag];
-
-      if (target instanceof Flag) {
-        flags.push(target);
-      }
-    }
 
     if (Game.flags) {
       for (const key in Game.flags) {
@@ -95,6 +86,42 @@ export class Finder {
       }
     }
 
-    return _.sortBy(flags, f => creep.pos.getRangeTo(f.pos));
+    return _.sortBy(flags, f => pos.getRangeTo(f.pos));
+  }
+
+  public static getVisitorFlags(pos: RoomPosition): Flag[] {
+    const flags: Flag[] = [];
+    const allFlags: Flag[] = this.getFlags(pos);
+
+    for (const flag of allFlags) {
+      const visitorCreep: Creep | null = flag.memory.visitor ? Game.getObjectById(flag.memory.visitor) : null;
+
+      if (!visitorCreep && flag.memory.visitor) {
+        console.log(`Clear flag - ${flag.name} ${flag.pos}`);
+        flag.memory.visitor = undefined;
+      }
+
+
+      if (flag.color !== COLOR_YELLOW || visitorCreep) {
+        continue;
+      }
+
+      const hostiles: Hostiles[] = PositionUtil.closestHostiles(flag.pos);
+
+      if (hostiles.length > 0) {
+        continue;
+      }
+
+      flags.push(flag);
+    }
+
+    return flags;
+  }
+
+  public static getStorages(pos: RoomPosition): StructureStorage[] {
+    // @ts-ignore
+    return pos.findInRange(FIND_MY_STRUCTURES, 50, {
+      filter: s => s.structureType === STRUCTURE_STORAGE && s.store.getFreeCapacity(RESOURCE_ENERGY) !== 0
+    });
   }
 }

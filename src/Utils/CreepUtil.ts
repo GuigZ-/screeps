@@ -1,13 +1,14 @@
 export const resetMemory = (creep: Creep): void => {
-  creep.memory.working = false;
-  creep.memory.transfer = false;
-  creep.memory.upgrade = false;
-  creep.memory.build = false;
-  creep.memory.attack = false;
-  creep.memory.claim = false;
-  creep.memory.harvest = false;
-  creep.memory.undertaker = false;
-  creep.memory.resource = false;
+  creep.memory.working = undefined;
+  creep.memory.transfer = undefined;
+  creep.memory.transferStorage = undefined;
+  creep.memory.upgrade = undefined;
+  creep.memory.build = undefined;
+  creep.memory.attack = undefined;
+  creep.memory.claim = undefined;
+  creep.memory.harvest = undefined;
+  creep.memory.undertaker = undefined;
+  creep.memory.resource = undefined;
   creep.memory.room = undefined;
   creep.memory.flag = undefined;
 };

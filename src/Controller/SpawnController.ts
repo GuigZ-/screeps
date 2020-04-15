@@ -23,37 +23,10 @@ export class SpawnController implements ControllerInterface {
   }
 
   public loop(): void {
-    const d: Date = new Date();
-
     const spawn: StructureSpawn = Game.spawns[this.spawnName];
 
     if (!spawn || !spawn.my) {
       return;
-    }
-
-    if (!spawn.memory.stats) {
-      spawn.memory.stats = [];
-    }
-
-    if (d.getUTCSeconds() <= 1 && d.getUTCMinutes() === 0) {
-      // @ts-ignore
-      const progress: number = spawn.room.controller.progress;
-
-
-      if (spawn.memory.stats.length >= 2) {
-        spawn.memory.stats[2] = spawn.memory.stats[1];
-      }
-
-      if (spawn.memory.stats.length >= 1) {
-        spawn.memory.stats[1] = spawn.memory.stats[0];
-      }
-
-      spawn.memory.stats[0] = {
-        date: `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`,
-        // @ts-ignore
-        last: (spawn.memory.stats.length >= 1 ? progress - spawn.memory.stats[1].progress : 0),
-        progress
-      };
     }
 
     if (spawn.memory.creeps) {
@@ -70,18 +43,19 @@ export class SpawnController implements ControllerInterface {
 
     if (spawn.spawning && spawn.spawning.remainingTime <= 1) {
       SpawnController.forceReload = true;
-      CreepCreator.inProgress = false;
     } else if (!spawn.spawning) {
       this.manageCreep(spawn);
     }
 
-    if (Game.time % 100 !== 0) {
-      return;
+    if (Game.time % 100 === 75) {
+      this.buildStorage(spawn);
+    } else if (Game.time % 100 === 50) {
+      this.buildExtensions(spawn);
+    } else if (Game.time % 100 === 25) {
+      this.buildRoad(spawn);
+    } else if (Game.time % 100 === 0) {
+      this.buildTower(spawn);
     }
-
-    this.buildExtensions(spawn);
-    this.buildRoad(spawn);
-    this.buildTower(spawn);
   }
 
   private manageCreep(spawn: StructureSpawn): void {
@@ -104,7 +78,7 @@ export class SpawnController implements ControllerInterface {
       });
     }
 
-    if (room.find(FIND_HOSTILE_CREEPS).length !== 0 || !creepNumberByType[KILLER]) {
+    if (PositionUtil.closestHostiles(spawn.pos).length >= parseInt(creepNumberByType[KILLER])) {
       CreepCreator.build(spawn, KILLER);
     }
 
@@ -121,6 +95,10 @@ export class SpawnController implements ControllerInterface {
       CreepCreator.build(spawn, HARVESTER);
     }
 
+    if (Finder.getVisitorFlags(spawn.pos).length > 0) {
+      CreepCreator.build(spawn, VISITOR);
+    }
+
     if (spawn.room.energyAvailable < spawn.room.energyCapacityAvailable * 0.5) {
       return;
     }
@@ -133,6 +111,8 @@ export class SpawnController implements ControllerInterface {
       CreepCreator.build(spawn, UPGRADER);
     } else if (!creepNumberByType[BUILDER] || creepNumberByType[BUILDER] < 2) {
       CreepCreator.build(spawn, BUILDER);
+    } else if (!creepNumberByType[KILLER]) {
+      CreepCreator.build(spawn, KILLER);
     } else if (!creepNumberByType[REPAIRER] || creepNumberByType[REPAIRER] < Math.min(
       2,
       spawn.room.controller ? spawn.room.controller.level : 2
@@ -145,8 +125,6 @@ export class SpawnController implements ControllerInterface {
       CreepCreator.build(spawn, UNDERTAKER);
     } else if ((!creepNumberByType[PICKUP] && closestResourcesLength) || closestResourcesLength > creepNumberByType[PICKUP]) {
       CreepCreator.build(spawn, PICKUP);
-    } else if (!creepNumberByType[VISITOR]) {
-      CreepCreator.build(spawn, VISITOR);
     }
 
     const ownRooms: Room[] = Finder.findOwnRooms();
@@ -156,7 +134,7 @@ export class SpawnController implements ControllerInterface {
       flags: for (const key in flags) {
         const flag: Flag = flags[key];
 
-        if (!flag || flag.color !== COLOR_WHITE) {
+        if (!flag || flag.color !== COLOR_WHITE) {
           continue;
         }
 
@@ -274,35 +252,36 @@ export class SpawnController implements ControllerInterface {
 
   private static buildExtension(pos: RoomPosition): boolean {
     const room: Room = Game.rooms[pos.roomName];
-    if (room.lookAt(pos).filter(e => e.terrain !== 'plain' && e.terrain !== 'swamp').length) {
+    if (room.lookAt(pos)
+            .filter(e => e.terrain !== 'plain' && e.terrain !== 'swamp').length) {
       return false;
     }
 
-    if (room.lookAt(pos.x - 1, pos.y)
-        .filter(e => e.terrain === 'wall').length
+    if (pos.x > 0 && pos.x < 49 && room.lookAt(pos.x - 1, pos.y)
+                                       .filter(e => e.terrain === 'wall').length
       && room.lookAt(pos.x + 1, pos.y)
-        .filter(e => e.terrain === 'wall').length) {
+             .filter(e => e.terrain === 'wall').length) {
       return false;
     }
 
-    if (room.lookAt(pos.x, pos.y - 1)
-        .filter(e => e.terrain === 'wall').length
+    if (pos.y > 0 && pos.y < 49 && room.lookAt(pos.x, pos.y - 1)
+                                       .filter(e => e.terrain === 'wall').length
       && room.lookAt(pos.x, pos.y + 1)
-        .filter(e => e.terrain === 'wall').length) {
+             .filter(e => e.terrain === 'wall').length) {
       return false;
     }
 
-    if (room.lookAt(pos.x - 1, pos.y - 1)
-        .filter(e => e.terrain === 'wall').length
+    if (pos.x > 0 && pos.x < 49 && pos.y > 0 && pos.y < 49 && room.lookAt(pos.x - 1, pos.y - 1)
+                                                                  .filter(e => e.terrain === 'wall').length
       && room.lookAt(pos.x + 1, pos.y + 1)
-        .filter(e => e.terrain === 'wall').length) {
+             .filter(e => e.terrain === 'wall').length) {
       return false;
     }
 
-    if (room.lookAt(pos.x - 1, pos.y + 1)
-        .filter(e => e.terrain === 'wall').length
+    if (pos.x > 0 && pos.x < 49 && pos.y > 0 && pos.y < 49 && room.lookAt(pos.x - 1, pos.y + 1)
+                                                                  .filter(e => e.terrain === 'wall').length
       && room.lookAt(pos.x + 1, pos.y - 1)
-        .filter(e => e.terrain === 'wall').length) {
+             .filter(e => e.terrain === 'wall').length) {
       return false;
     }
 
@@ -317,27 +296,27 @@ export class SpawnController implements ControllerInterface {
     }
 
     spawn.room.find(FIND_MY_STRUCTURES, {filter: structure => structure.my})
-      .forEach(structure => {
-        const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
-        path.forEach(pos => pos.look()
-          .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
-      });
+         .forEach(structure => {
+           const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
+           path.forEach(pos => pos.look()
+                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+         });
 
     spawn.room.find(FIND_STRUCTURES, {filter: structure => structure.structureType === STRUCTURE_RAMPART})
-      .forEach(structure => {
-        const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
-        path.forEach(pos => pos.look()
-          .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
-      });
+         .forEach(structure => {
+           const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
+           path.forEach(pos => pos.look()
+                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+         });
 
     spawn.room.find(FIND_SOURCES_ACTIVE)
-      .forEach((source: Source) => {
-        const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, source.pos);
-        path.forEach(pos => pos.look()
-          .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
-      });
+         .forEach((source: Source) => {
+           const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, source.pos);
+           path.forEach(pos => pos.look()
+                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+         });
 
-    const storageStructures: StorageType[] = PositionUtil.closestStorages(spawn.pos);
+    const storageStructures: StorageType[] = PositionUtil.closestEnergyStorages(spawn.pos);
 
     storageStructures.forEach(s => {
       const source: Source = PositionUtil.closestSources(s.pos, true)[0];
@@ -348,7 +327,8 @@ export class SpawnController implements ControllerInterface {
 
       const {path}: PathFinderPath = PositionUtil.pathRoad(s.pos, source.pos);
       path.forEach(pos => pos.look()
-        .filter((element: LookAtResult) => element.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+                             .filter((element: LookAtResult) => element.structure).length === 0 && pos.createConstructionSite(
+        STRUCTURE_ROAD));
     });
   }
 
@@ -386,5 +366,37 @@ export class SpawnController implements ControllerInterface {
 
     } while (posX >= 10 && posX <= 39 && posY >= 10 && posY <= 39 && newPos.createConstructionSite(
       STRUCTURE_TOWER) !== OK);
+  }
+
+  private buildStorage(spawn: StructureSpawn): void {
+    if (!spawn.room.controller || spawn.room.controller.level <= 3 || Finder.getStorages(spawn.pos).length === 1) {
+      return;
+    }
+
+    let newPos: RoomPosition | undefined;
+    let counter = 1;
+    const {x, y, roomName} = spawn.pos;
+    let range: number = 5;
+
+    do {
+      switch (counter) {
+        case 1:
+          newPos = new RoomPosition(x - range, y, roomName);
+          break;
+        case 2:
+          newPos = new RoomPosition(x, y - range, roomName);
+          break;
+        case 3:
+          newPos = new RoomPosition(x + range, y + range, roomName);
+          break;
+        case 4:
+          newPos = new RoomPosition(x + range, y + range, roomName);
+          counter = 0;
+          range++;
+          break;
+      }
+
+      counter++;
+    } while (counter <= 4 && newPos && newPos.createConstructionSite(STRUCTURE_STORAGE) !== OK);
   }
 }

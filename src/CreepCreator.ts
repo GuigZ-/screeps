@@ -14,21 +14,13 @@ import {PositionUtil} from './Utils/PositionUtil';
 
 export class CreepCreator {
   private static defaultBody: BodyPartConstant[] = [MOVE, CARRY, WORK];
-  public static inProgress: boolean = false;
-
   private static buildName(spawn: StructureSpawn, work: WORKS, counter: number = 0): string {
     return `${spawn.room.name}_${work}_${counter}`;
   }
 
   public static build(spawn: StructureSpawn, work: WORKS, opts: SpawnOptions = {}): void {
-    if (CreepCreator.inProgress) {
-      return;
-    }
-
-    const bodyPartNumber: number = 50;
-    const bodyBasePart: number = CreepCreator.defaultBody.length;
-    const freePart: number = bodyPartNumber - bodyBasePart;
-
+    let bodyPartNumber: number = 50;
+    let bodyBasePart: number = CreepCreator.defaultBody.length;
     let bodyPartRequired: any[] = [];
 
     switch (work) {
@@ -51,10 +43,10 @@ export class CreepCreator {
         ];
         break;
       case VISITOR:
+        bodyPartNumber = 1;
+        bodyBasePart = 0;
         bodyPartRequired = [
-          {body: CARRY, value: 20},
-          {body: WORK, value: 20},
-          {body: MOVE, value: 60}
+          {body: MOVE, value: 100}
         ];
         break;
       case REPAIRER:
@@ -85,6 +77,7 @@ export class CreepCreator {
         throw new Error(`No creeps work found.`);
     }
 
+    const freePart: number = bodyPartNumber - bodyBasePart;
     let bodyPart: BodyPartConstant[] = [];
 
     for (let i = freePart; i > 0; i--) {
@@ -109,6 +102,8 @@ export class CreepCreator {
 
         if (work === HARVESTER) {
           source = CreepCreator.getTargetSource(spawn, counter);
+        } else if (work === VISITOR) {
+
         }
 
         spawnCreep = spawn.spawnCreep(
@@ -128,7 +123,6 @@ export class CreepCreator {
       } while (spawnCreep === ERR_NAME_EXISTS);
 
       if (spawnCreep === OK) {
-        CreepCreator.inProgress = true;
         if (!spawn.memory.creeps) {
           spawn.memory.creeps = [];
         }

@@ -11,21 +11,23 @@ import {
   UPGRADER,
   VISITOR
 } from '../Constants';
-import {SpawnController} from './SpawnController';
-import {Harvest} from '../Works/Harvest';
-import {WorkInterface} from '../Works/WorkInterface';
-import {Transfer} from '../Works/Transfer';
-import {Upgrade} from '../Works/Upgrade';
-import {Build} from '../Works/Build';
-import {Repair} from '../Works/Repair';
 import {Attack} from '../Works/Attack';
+import {Build} from '../Works/Build';
 import {Claim} from '../Works/Claim';
-import {ToFlag} from '../Works/ToFlag';
-import {RoomBuilder} from '../Works/RoomBuilder';
-import {resetMemory} from '../Utils/CreepUtil';
-import {Undertaker} from '../Works/Undertaker';
+import {Defense} from '../Works/Defense';
+import {Harvest} from '../Works/Harvest';
 import {Pickup} from '../Works/Pickup';
+import {Repair} from '../Works/Repair';
+import {RoomBuilder} from '../Works/RoomBuilder';
+import {SpawnController} from './SpawnController';
+import {ToFlag} from '../Works/ToFlag';
+import {TransferEnergy} from '../Works/TransferEnergy';
+import {Undertaker} from '../Works/Undertaker';
+import {Upgrade} from '../Works/Upgrade';
 import {Visitor} from '../Works/Visitor';
+import {WorkInterface} from '../Works/WorkInterface';
+import {resetMemory} from '../Utils/CreepUtil';
+import {TransferStorage} from '../Works/TransferStorage';
 
 export class CreepController implements ControllerInterface {
   private readonly creepName: string;
@@ -34,30 +36,32 @@ export class CreepController implements ControllerInterface {
   constructor(creep: string) {
     this.creepName = creep;
 
-    const harvest: Harvest = new Harvest();
-    const transfer: Transfer = new Transfer();
-    const build: Build = new Build();
-    const upgrade: Upgrade = new Upgrade();
-    const repair: Repair = new Repair();
     const attack: Attack = new Attack();
+    const build: Build = new Build();
     const claim: Claim = new Claim();
+    const defense: Defense = new Defense();
     const flag: ToFlag = new ToFlag();
-    const roomBuilder: RoomBuilder = new RoomBuilder();
-    const undertaker: Undertaker = new Undertaker();
+    const harvest: Harvest = new Harvest();
     const pickUp: Pickup = new Pickup();
+    const repair: Repair = new Repair();
+    const roomBuilder: RoomBuilder = new RoomBuilder();
+    const transfer: TransferEnergy = new TransferEnergy();
+    const transferStorage: TransferStorage = new TransferStorage();
+    const undertaker: Undertaker = new Undertaker();
+    const upgrade: Upgrade = new Upgrade();
     const visitor: Visitor = new Visitor();
 
     this.worksByType = {
-      [BUILDER]: [harvest, build, transfer, upgrade],
-      [CLAIMER]: [flag, claim, harvest, build, transfer],
-      [HARVESTER]: [harvest, transfer, build, upgrade],
-      [KILLER]: [attack, flag, harvest, build, transfer, repair, upgrade],
-      [PICKUP]: [pickUp, harvest, repair, build, transfer, upgrade],
-      [REPAIRER]: [harvest, repair, build, transfer, upgrade],
-      [ROOM_BUILDER]: [roomBuilder, harvest, build, transfer],
-      [UNDERTAKER]: [undertaker, harvest, transfer, build, upgrade],
-      [UPGRADER]: [harvest, upgrade, transfer, build],
-      [VISITOR]: [visitor, harvest, transfer, upgrade],
+      [BUILDER]: [defense, pickUp, undertaker, harvest, build, transfer, transferStorage, upgrade],
+      [CLAIMER]: [defense, flag, claim, pickUp, undertaker, harvest, build, transfer, transferStorage],
+      [HARVESTER]: [defense, pickUp, undertaker, harvest, transfer, transferStorage, build, upgrade],
+      [KILLER]: [attack, flag, pickUp, undertaker, harvest, build, transfer, transferStorage, repair, upgrade],
+      [PICKUP]: [defense, pickUp, undertaker, harvest, repair, build, transfer, transferStorage, upgrade],
+      [REPAIRER]: [defense, pickUp, undertaker, harvest, repair, build, transfer, transferStorage, upgrade],
+      [ROOM_BUILDER]: [defense, roomBuilder, pickUp, undertaker, harvest, build, transfer, transferStorage],
+      [UNDERTAKER]: [defense, undertaker, pickUp, harvest, transfer, transferStorage, build, upgrade],
+      [UPGRADER]: [defense, pickUp, undertaker, harvest, upgrade, transfer, transferStorage, build],
+      [VISITOR]: [defense, visitor],
     }
   }
 
@@ -82,7 +86,9 @@ export class CreepController implements ControllerInterface {
       }
     }
 
-    if (creep.store.getCapacity(RESOURCE_ENERGY) === creep.store.getFreeCapacity(RESOURCE_ENERGY)) {
+    if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0 && (creep.memory.harvest || creep.memory.undertaker || creep.memory.resource)) {
+      resetMemory(creep);
+    } else if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === creep.store.getCapacity(RESOURCE_ENERGY) && !creep.memory.harvest) {
       resetMemory(creep);
     }
 

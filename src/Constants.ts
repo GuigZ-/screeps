@@ -23,4 +23,6 @@ export const VISITOR: VISITOR_TYPE = 'visitor';
 
 export type StorageType = StructureSpawn | StructureExtension | StructureTower;
 export type Hostiles = Creep | StructureInvaderCore;
-export type UndertakerSource =  Tombstone | Ruin;
+export type UndertakerSource =  Tombstone | Ruin | StructureStorage;
+
+export type StatType = Array<{progress: number, date: string, last: number, timeToUp: number, level: number}>;

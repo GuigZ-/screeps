@@ -3,6 +3,7 @@ import {SpawnController} from './Controller/SpawnController';
 import {CreepController} from './Controller/CreepController';
 import {ControllerInterface} from './Controller/ControllerInterface';
 import {TowerController} from './Controller/TowerController';
+import {Stat} from './Utils/Stat';
 
 let objects: ControllerInterface[];
 
@@ -42,6 +43,8 @@ init();
 // This utility uses source maps to get the line numbers and file names of the original, TS source code
 export const loop = ErrorMapper.wrapLoop(() => {
   console.log(`Current game tick is ${Game.time}`);
+
+  Stat.save();
 
   if (Game.time % 50 === 0 || SpawnController.forceReload) {
     SpawnController.forceReload = false;

@@ -42,10 +42,16 @@ export class PositionUtil {
       {filter: s => s.store.getUsedCapacity(RESOURCE_ENERGY) > 0}
     ));
 
+    sources = sources.concat(<StructureStorage[]>pos.findInRange(
+      FIND_MY_STRUCTURES,
+      50,
+      {filter: s => s.structureType === STRUCTURE_STORAGE && s.store.getUsedCapacity(RESOURCE_ENERGY) > 0}
+    ));
+
     return _.sortBy(sources, s => pos.getRangeTo(s));
   }
 
-  public static closestStorages(pos: RoomPosition, freeCapacity: boolean = false): StorageType[] {
+  public static closestEnergyStorages(pos: RoomPosition, freeCapacity: boolean = false): StorageType[] {
     let storages: StorageType[] = [];
     for (const key in Game.rooms) {
       const room: Room = Game.rooms[key];
@@ -72,6 +78,7 @@ export class PositionUtil {
 
   public static closestHostiles(pos: RoomPosition): Hostiles[] {
     const room = Game.rooms[pos.roomName];
+
     if (!room) {
       return [];
     }
@@ -84,7 +91,16 @@ export class PositionUtil {
       {filter: s => s.structureType === STRUCTURE_INVADER_CORE}
     ));
 
-    return _.sortBy(allHostiles, s => pos.getRangeTo(s));
+    return _.sortBy(
+      allHostiles,
+      s => {
+        if (s instanceof Creep) {
+          return s.getActiveBodyparts(HEAL) * -5 + s.getActiveBodyparts(ATTACK) * -1;
+        }
+
+        return 50 * pos.getRangeTo(s);
+      }
+    );
   }
 
   public static pathRoad(from: RoomPosition, to: RoomPosition, range: number = 1): PathFinderPath {
@@ -118,7 +134,7 @@ export class PositionUtil {
     });
 
     anyOwnedStructures = anyOwnedStructures.concat(Game.rooms[pos.roomName].find(FIND_STRUCTURES, {
-      filter: s => (s.structureType === STRUCTURE_RAMPART || s.structureType === STRUCTURE_WALL) && isRepairable(s)
+      filter: s => (s.structureType === STRUCTURE_RAMPART || s.structureType === STRUCTURE_WALL || s.structureType === STRUCTURE_ROAD) && isRepairable(s)
     }));
 
     return _.sortBy(anyOwnedStructures, s => s.hits / s.hitsMax);

@@ -1,13 +1,12 @@
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {Finder} from '../Utils/Finder';
 import {WorkInterface} from './WorkInterface';
+import {PICKUP} from '../Constants';
 
 export class Pickup implements WorkInterface {
 
   public work(creep: Creep): boolean {
     if (!Pickup.can(creep)) {
-      resetMemory(creep);
-
       return false;
     }
 
@@ -29,7 +28,11 @@ export class Pickup implements WorkInterface {
   }
 
   private static can(creep: Creep): boolean {
-    return !(creep.memory.working && !creep.memory.resource && !creep.memory.harvest);
+    if (creep.memory.working && !creep.memory.resource && !creep.memory.harvest) {
+      return false;
+    }
+
+    return true;
   }
 
   private static getSources(creep: Creep): Resource[] {

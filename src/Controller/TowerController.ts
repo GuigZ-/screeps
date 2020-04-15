@@ -11,12 +11,10 @@ export class TowerController implements ControllerInterface {
 
   loop(): void {
     const tower: StructureTower = this.getTower();
-    this.attack(tower) || tower.store.getFreeCapacity(RESOURCE_ENERGY) > (tower.store.getCapacity(RESOURCE_ENERGY) / 2) || this.repair(
-      tower);
-    // TODO: repair
+    TowerController.attack(tower) || tower.store.getFreeCapacity(RESOURCE_ENERGY) > (tower.store.getCapacity(RESOURCE_ENERGY) / 2) || TowerController.heal(tower) || TowerController.repair(tower);
   }
 
-  private attack(tower: StructureTower): boolean {
+  private static attack(tower: StructureTower): boolean {
     const hostiles: Hostiles[] = PositionUtil.closestHostiles(tower.pos);
 
     if (hostiles.length === 0) {
@@ -33,13 +31,27 @@ export class TowerController implements ControllerInterface {
     return true;
   }
 
-  private repair(tower: StructureTower): boolean {
+  private static repair(tower: StructureTower): boolean {
     const ownedStructures: AnyStructure[] = PositionUtil.closestStructureToRepair(tower.pos);
     if (ownedStructures.length === 0) {
       return false;
     }
 
     tower.repair(ownedStructures[0]);
+
+    return true;
+  }
+
+  private static heal(tower: StructureTower): boolean {
+    const ownedStructures: AnyCreep[] = tower.pos.findInRange(FIND_MY_CREEPS, 50, {filter:
+      c => c.hits !== c.hitsMax
+    });
+
+    if (ownedStructures.length === 0) {
+      return false;
+    }
+
+    tower.heal(ownedStructures[0]);
     return true;
   }
 

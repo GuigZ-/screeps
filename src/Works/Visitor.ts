@@ -12,21 +12,12 @@ export class Visitor implements WorkInterface {
 
     resetMemory(creep);
 
-    const flags: Flag[] = Finder.getFlags(creep);
+    const flags: Flag[] = Visitor.getFlags(creep);
 
     for (const flag of flags) {
-      if (flag.color !== COLOR_YELLOW) {
-        continue;
-      }
-      
-      const hostiles: Hostiles[] = PositionUtil.closestHostiles(flag.pos);
-
-      if (hostiles.length > 0) {
-        continue;
-      }
-
       if (moveTo(creep, flag)) {
         creep.memory.visitorFlag = flag.name;
+        flag.memory.visitor = creep.id;
         return true;
       }
     }
@@ -37,10 +28,27 @@ export class Visitor implements WorkInterface {
   }
 
   private static can(creep: Creep): boolean {
-    if (!Game.flags) {
+    if (this.getFlags(creep).length === 0 && !creep.memory.visitorFlag) {
       return false;
     }
 
     return !(creep.memory.working && !creep.memory.visitorFlag);
+  }
+
+  private static getFlags(creep: Creep): Flag[] {
+    const flags: Flag[] = [];
+
+    if (creep.memory.visitorFlag && Object.keys(Game.flags)
+                                   .includes(creep.memory.visitorFlag)) {
+      const target: RoomObject = Game.flags[creep.memory.visitorFlag];
+
+      if (target instanceof Flag) {
+        flags.push(target);
+
+        return flags;
+      }
+    }
+
+    return flags.concat(Finder.getVisitorFlags(creep.pos));
   }
 }

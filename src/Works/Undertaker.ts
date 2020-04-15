@@ -7,8 +7,6 @@ export class Undertaker implements WorkInterface {
 
   public work(creep: Creep): boolean {
     if (!Undertaker.can(creep)) {
-      resetMemory(creep);
-
       return false;
     }
 
@@ -17,11 +15,13 @@ export class Undertaker implements WorkInterface {
     const sources: UndertakerSource[] = Undertaker.getSources(creep);
 
     for (const source of sources) {
-      const withdraw: ScreepsReturnCode = creep.withdraw(source, RESOURCE_ENERGY);
+      for (const energy of Object.keys(source.store)) {
+        const withdraw: ScreepsReturnCode = creep.withdraw(source, <ResourceConstant>energy);
 
-      if (workMoveTo(creep, withdraw, source)) {
-        creep.memory.undertaker = true;
-        return true;
+        if (workMoveTo(creep, withdraw, source)) {
+          creep.memory.undertaker = true;
+          return true;
+        }
       }
     }
 
@@ -44,7 +44,7 @@ export class Undertaker implements WorkInterface {
     if (creep.memory.target) {
       const memoryTarget: RoomObject = Game.getObjectById(creep.memory.target);
 
-      if ((memoryTarget instanceof Ruin ||  memoryTarget instanceof Tombstone) && memoryTarget.store.getFreeCapacity() > 0) {
+      if ((memoryTarget instanceof Ruin || memoryTarget instanceof Tombstone) && memoryTarget.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
         targets.push(memoryTarget);
       }
     }

@@ -35,7 +35,7 @@ export class Undertaker implements WorkInterface {
       return false;
     }
 
-    return creep.store.getFreeCapacity(RESOURCE_ENERGY) !== 0;
+    return creep.store.getFreeCapacity() !== 0;
   }
 
   private static getSources(creep: Creep): UndertakerSource[] {
@@ -44,7 +44,7 @@ export class Undertaker implements WorkInterface {
     if (creep.memory.target) {
       const memoryTarget: RoomObject = Game.getObjectById(creep.memory.target);
 
-      if ((memoryTarget instanceof Ruin || memoryTarget instanceof Tombstone) && memoryTarget.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+      if ((memoryTarget instanceof Ruin || memoryTarget instanceof Tombstone) && memoryTarget.store.getFreeCapacity() > 0) {
         targets.push(memoryTarget);
       }
     }

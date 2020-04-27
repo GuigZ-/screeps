@@ -18,13 +18,8 @@ export class TransferStorage implements WorkInterface {
         if (energy === RESOURCE_ENERGY) {
           continue;
         }
-        console.log(`${creep.name} - ${energy} - ${creep.store.getUsedCapacity(<ResourceConstant>energy)}`);
 
         if (storage.store.getFreeCapacity(<ResourceConstant>energy) === 0) {
-          continue;
-        }
-
-        if (!RoomUtil.isNearestRoom(Game.spawns[creep.memory.spawnName].room.name, storage.pos.roomName)) {
           continue;
         }
 

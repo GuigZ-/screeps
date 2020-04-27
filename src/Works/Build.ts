@@ -1,6 +1,7 @@
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {WorkInterface} from './WorkInterface';
 import {PICKUP} from '../Constants';
+import {Finder} from '../Utils/Finder';
 
 export class Build implements WorkInterface {
   public work(creep: Creep): boolean {
@@ -32,7 +33,7 @@ export class Build implements WorkInterface {
       return false;
     }
 
-    return creep.store.getCapacity(RESOURCE_ENERGY) !== creep.store.getFreeCapacity(RESOURCE_ENERGY);
+    return creep.store.getCapacity() !== creep.store.getFreeCapacity();
   }
 
   private static getConstructionSites(creep: Creep): ConstructionSite[] {
@@ -46,18 +47,6 @@ export class Build implements WorkInterface {
       }
     }
 
-    const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_WALL, STRUCTURE_RAMPART, STRUCTURE_ROAD];
-
-    for (const type of sortByTypes) {
-      const targets = creep.pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
-        filter: e => e.room && e.room.name === creep.room.name && e.structureType === type
-      });
-
-      if (targets) {
-        constructionSites = constructionSites.concat(targets);
-      }
-    }
-
-    return constructionSites;
+    return constructionSites.concat(Finder.getConstructionSites(creep.pos));
   }
 }

@@ -2,16 +2,16 @@ import {
   BUILDER,
   CLAIMER,
   HARVESTER,
-  KILLER, PICKUP,
+  KILLER, MAPPER, PICKUP,
   REPAIRER,
   ROOM_BUILDER,
   StorageType,
   UNDERTAKER,
-  UPGRADER, VISITOR
+  UPGRADER, VISITOR, WORKS
 } from '../Constants';
 import {CreepCreator} from '../CreepCreator';
 import {Finder} from '../Utils/Finder';
-import {PositionUtil} from '../Utils/PositionUtil';
+import {isBuildable, PositionUtil} from '../Utils/PositionUtil';
 import {ControllerInterface} from './ControllerInterface';
 
 export class SpawnController implements ControllerInterface {
@@ -82,7 +82,8 @@ export class SpawnController implements ControllerInterface {
       CreepCreator.build(spawn, KILLER);
     }
 
-    const sourcesNumber: number = room.find(FIND_SOURCES, {filter: s => s.room.name === room.name}).length;
+    const sourcesNumber: number = PositionUtil.closestSources(spawn.pos, true)
+                                              .filter(s => s.pos.roomName === spawn.pos.roomName).length;
     const controllerNumber: number = room.find(
       FIND_STRUCTURES,
       {filter: s => s.room.name === room.name && s.structureType === STRUCTURE_CONTROLLER}
@@ -95,8 +96,8 @@ export class SpawnController implements ControllerInterface {
       CreepCreator.build(spawn, HARVESTER);
     }
 
-    if (Finder.getVisitorFlags(spawn.pos).length > 0) {
-      CreepCreator.build(spawn, VISITOR);
+    if (!creepNumberByType[MAPPER]) {
+      CreepCreator.build(spawn, MAPPER);
     }
 
     if (spawn.room.energyAvailable < spawn.room.energyCapacityAvailable * 0.5) {
@@ -105,18 +106,17 @@ export class SpawnController implements ControllerInterface {
 
     const undertakerSourcesLength: number = PositionUtil.closestUndertakerSources(spawn.pos).length;
     const closestResourcesLength: number = Finder.closestResources(spawn.pos).length;
+    const structureToRepair: number = PositionUtil.closestStructureToRepair(spawn.pos).length;
+    const constructionSites: number = Finder.getConstructionSites(spawn.pos).length;
 
     const rooms: Room[] = Finder.findRoomsToBuild();
     if (!creepNumberByType[UPGRADER] || creepNumberByType[UPGRADER] < controllerNumber * 2) {
       CreepCreator.build(spawn, UPGRADER);
-    } else if (!creepNumberByType[BUILDER] || creepNumberByType[BUILDER] < 2) {
+    } else if (!creepNumberByType[BUILDER] && constructionSites) {
       CreepCreator.build(spawn, BUILDER);
-    } else if (!creepNumberByType[KILLER]) {
+    } else if (!creepNumberByType[KILLER] || creepNumberByType[KILLER] < Game.gcl) {
       CreepCreator.build(spawn, KILLER);
-    } else if (!creepNumberByType[REPAIRER] || creepNumberByType[REPAIRER] < Math.min(
-      2,
-      spawn.room.controller ? spawn.room.controller.level : 2
-    )) {
+    } else if (!creepNumberByType[REPAIRER] && structureToRepair) {
       CreepCreator.build(spawn, REPAIRER);
     } else if (rooms.length) {
       // @ts-ignore
@@ -128,11 +128,11 @@ export class SpawnController implements ControllerInterface {
     }
 
     const ownRooms: Room[] = Finder.findOwnRooms();
-
-    if (Object.keys(Game.flags).length && ownRooms.length < Game.gcl.level) {
-      const flags: Flag[] = _.sortBy(Game.flags, f => spawn.pos.getRangeTo(f.pos));
+    const flags: Flag[] = Finder.getFlags(spawn.pos);
+    if (flags.length && ownRooms.length < Game.gcl.level) {
       flags: for (const key in flags) {
         const flag: Flag = flags[key];
+
 
         if (!flag || flag.color !== COLOR_WHITE) {
           continue;
@@ -146,18 +146,14 @@ export class SpawnController implements ControllerInterface {
           continue;
         }
 
-        if (flag.room.controller.owner) {
+        if (flag.room.controller.owner || flag.memory.claim) {
           continue;
         }
 
         for (const k in Game.creeps) {
           const creep: Creep = Game.creeps[k];
 
-          if (!creep.memory.flag) {
-            continue;
-          }
-
-          if (creep.memory.flag !== flag.name) {
+          if (creep.memory.claimPos) {
             continue;
           }
 
@@ -252,36 +248,44 @@ export class SpawnController implements ControllerInterface {
 
   private static buildExtension(pos: RoomPosition): boolean {
     const room: Room = Game.rooms[pos.roomName];
-    if (room.lookAt(pos)
-            .filter(e => e.terrain !== 'plain' && e.terrain !== 'swamp').length) {
+
+    if (true === true) {
       return false;
     }
 
-    if (pos.x > 0 && pos.x < 49 && room.lookAt(pos.x - 1, pos.y)
-                                       .filter(e => e.terrain === 'wall').length
-      && room.lookAt(pos.x + 1, pos.y)
-             .filter(e => e.terrain === 'wall').length) {
+    if (!isBuildable(pos)) {
       return false;
     }
 
-    if (pos.y > 0 && pos.y < 49 && room.lookAt(pos.x, pos.y - 1)
-                                       .filter(e => e.terrain === 'wall').length
-      && room.lookAt(pos.x, pos.y + 1)
-             .filter(e => e.terrain === 'wall').length) {
+    if (
+      pos.x > 0 && pos.x < 49
+      && !isBuildable(new RoomPosition(pos.x - 1, pos.y, pos.roomName))
+      && !isBuildable(new RoomPosition(pos.x + 1, pos.y, pos.roomName))
+    ) {
       return false;
     }
 
-    if (pos.x > 0 && pos.x < 49 && pos.y > 0 && pos.y < 49 && room.lookAt(pos.x - 1, pos.y - 1)
-                                                                  .filter(e => e.terrain === 'wall').length
-      && room.lookAt(pos.x + 1, pos.y + 1)
-             .filter(e => e.terrain === 'wall').length) {
+    if (
+      pos.x > 0 && pos.x < 49
+      && !isBuildable(new RoomPosition(pos.x, pos.y - 1, pos.roomName))
+      && !isBuildable(new RoomPosition(pos.x, pos.y + 1, pos.roomName))
+    ) {
       return false;
     }
 
-    if (pos.x > 0 && pos.x < 49 && pos.y > 0 && pos.y < 49 && room.lookAt(pos.x - 1, pos.y + 1)
-                                                                  .filter(e => e.terrain === 'wall').length
-      && room.lookAt(pos.x + 1, pos.y - 1)
-             .filter(e => e.terrain === 'wall').length) {
+    if (
+      pos.x > 0 && pos.x < 49 && pos.y > 0 && pos.y < 49
+      && !isBuildable(new RoomPosition(pos.x - 1, pos.y - 1, pos.roomName))
+      && !isBuildable(new RoomPosition(pos.x + 1, pos.y + 1, pos.roomName))
+    ) {
+      return false;
+    }
+
+    if (
+      pos.x > 0 && pos.x < 49 && pos.y > 0 && pos.y < 49
+      && !isBuildable(new RoomPosition(pos.x - 1, pos.y + 1, pos.roomName))
+      && !isBuildable(new RoomPosition(pos.x + 1, pos.y - 1, pos.roomName))
+    ) {
       return false;
     }
 
@@ -298,22 +302,25 @@ export class SpawnController implements ControllerInterface {
     spawn.room.find(FIND_MY_STRUCTURES, {filter: structure => structure.my})
          .forEach(structure => {
            const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
-           path.forEach(pos => pos.look()
-                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+           path.forEach(pos => pos.roomName === spawn.room.name && pos.look()
+                                                                      .filter(s => s.structure).length === 0 && pos.createConstructionSite(
+             STRUCTURE_ROAD));
          });
 
     spawn.room.find(FIND_STRUCTURES, {filter: structure => structure.structureType === STRUCTURE_RAMPART})
          .forEach(structure => {
            const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, structure.pos);
-           path.forEach(pos => pos.look()
-                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+           path.forEach(pos => pos.roomName === spawn.room.name && pos.look()
+                                                                      .filter(s => s.structure).length === 0 && pos.createConstructionSite(
+             STRUCTURE_ROAD));
          });
 
     spawn.room.find(FIND_SOURCES_ACTIVE)
          .forEach((source: Source) => {
            const {path}: PathFinderPath = PositionUtil.pathRoad(spawn.pos, source.pos);
-           path.forEach(pos => pos.look()
-                                  .filter(s => s.structure).length === 0 && pos.createConstructionSite(STRUCTURE_ROAD));
+           path.forEach(pos => pos.roomName === spawn.room.name && pos.look()
+                                                                      .filter(s => s.structure).length === 0 && pos.createConstructionSite(
+             STRUCTURE_ROAD));
          });
 
     const storageStructures: StorageType[] = PositionUtil.closestEnergyStorages(spawn.pos);

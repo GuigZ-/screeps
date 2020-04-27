@@ -32,7 +32,7 @@ export class Pickup implements WorkInterface {
       return false;
     }
 
-    return true;
+    return creep.store.getFreeCapacity() !== 0;
   }
 
   private static getSources(creep: Creep): Resource[] {

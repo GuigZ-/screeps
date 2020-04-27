@@ -13,11 +13,17 @@ export class RoomBuilder implements WorkInterface {
     const rooms: Room[] = RoomBuilder.getRooms(creep);
 
     for (const room of rooms) {
-      if (!room.controller) {
+      if (!room.controller || !room.controller.my || room.name === creep.pos.roomName) {
         continue;
       }
 
-      if (moveTo(creep, room.controller, {visualizePathStyle: {lineStyle: undefined, stroke: '#00F', opacity: 1}})) {
+      const constructionsSites = room.find(FIND_MY_CONSTRUCTION_SITES, {filter: c => c.structureType === STRUCTURE_SPAWN});
+
+      if (constructionsSites.length === 0) {
+        continue;
+      }
+
+      if (moveTo(creep, constructionsSites[0], {visualizePathStyle: {lineStyle: undefined, stroke: '#00F', opacity: 1}})) {
         creep.memory.working = true;
         creep.memory.room = room.name;
         return true;
@@ -30,11 +36,7 @@ export class RoomBuilder implements WorkInterface {
   }
 
   private static can(creep: Creep): boolean {
-    if (creep.memory.working && !creep.memory.room) {
-      return false;
-    }
-
-    return creep.store.getCapacity(RESOURCE_ENERGY) !== creep.store.getFreeCapacity(RESOURCE_ENERGY);
+    return !(creep.memory.working && !creep.memory.room);
   }
 
   private static getRooms(creep: Creep): Room[] {

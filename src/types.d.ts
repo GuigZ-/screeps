@@ -1,10 +1,11 @@
 interface SpawnMemory {
   creeps: string[],
-  stats: import('./Constants').StatType;
+  stats: import('./Constants').StatType
 }
 
 interface FlagMemory {
-  visitor?: Id<Creep>
+  visitor?: Id<Creep>,
+  claim ?: boolean
 }
 
 interface CreepMemory {
@@ -13,8 +14,11 @@ interface CreepMemory {
   claim?: boolean;
   claimPos: RoomPosition;
   flag?: string;
-  visitorFlag?: string;
+  fromRoom?: string;
   harvest?: boolean;
+  map?: boolean;
+  mapMoveTo?: Array<{ exit: ExitConstant, room: string }>;
+  mapRoom?: string;
   renew?: boolean;
   repair?: boolean;
   resource?: boolean;
@@ -27,6 +31,7 @@ interface CreepMemory {
   transferStorage?: boolean;
   undertaker?: boolean;
   upgrade?: boolean;
+  visitorFlag?: string;
   wall_build?: boolean;
   working?: boolean;
 }
@@ -35,6 +40,11 @@ interface Memory {
   uuid: number;
   log: any;
   stats: import('./Constants').StatType;
+  pathMemory: Array<{from: string, to: RoomPosition, path: number}>;
+  invaders: {[p: string]: {name: string, date: string, pos: RoomPosition}};
+  mapped: {[p: string]: {tick: number, powerBank: boolean, owner: boolean, sources: number, isBuildable?: boolean, sourcesHarvestable: number, hasController: boolean}};
+  sourcesList: {[roomName: string]: Id<Source>[]};
+  storagesList: {[roomName: string]: Id<import('./Constants').StorageType>[]};
 }
 
 // `global` extension samples

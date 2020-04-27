@@ -2,11 +2,13 @@ import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {RoomUtil} from '../Utils/RoomUtil';
 import {WorkInterface} from './WorkInterface';
+import {CLAIMER, ROOM_BUILDER} from '../Constants';
 
 export class Harvest implements WorkInterface {
 
   public work(creep: Creep): boolean {
     if (!Harvest.can(creep)) {
+
       return false;
     }
 
@@ -15,7 +17,10 @@ export class Harvest implements WorkInterface {
     const sources: Source[] = Harvest.getSources(creep);
 
     for (const source of sources) {
-      if (!RoomUtil.isNearestRoom(Game.spawns[creep.memory.spawnName].room.name, source.pos.roomName)) {
+      if (creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER && !RoomUtil.isNearestRoom(
+        Game.spawns[creep.memory.spawnName].room.name,
+        source.pos.roomName
+      )) {
         continue;
       }
 
@@ -26,7 +31,6 @@ export class Harvest implements WorkInterface {
         return true;
       }
     }
-      console.log(`${creep.name}`);
 
     resetMemory(creep);
 
@@ -38,7 +42,7 @@ export class Harvest implements WorkInterface {
       return false;
     }
 
-    return creep.store.getFreeCapacity(RESOURCE_ENERGY) !== 0;
+    return creep.store.getFreeCapacity() !== 0;
   }
 
   private static getSources(creep: Creep): Source[] {
@@ -57,9 +61,13 @@ export class Harvest implements WorkInterface {
 
       if (memoryTarget instanceof Source && memoryTarget.energy > 0) {
         targets.push(memoryTarget);
+        return targets;
       }
     }
 
-    return targets.concat(PositionUtil.closestSources(creep.pos));
+    return targets.concat(PositionUtil.closestSources(
+      creep.pos,
+      creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER
+    ));
   }
 }

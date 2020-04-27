@@ -8,7 +8,20 @@ type ROOM_TYPE = 'room';
 type UNDERTAKER_TYPE = 'undertaker';
 type PICKUP_TYPE = 'pickup';
 type VISITOR_TYPE = 'visitor';
-export type WORKS = HARVESTER_TYPE | UPGRADER_TYPE | BUILDER_TYPE| ATTACK_TYPE | REPAIR_TYPE | CLAIM_TYPE | ROOM_TYPE | UNDERTAKER_TYPE | PICKUP_TYPE | VISITOR_TYPE;
+type MAPPER_TYPE = 'mapper';
+
+export type WORKS =
+  HARVESTER_TYPE
+  | UPGRADER_TYPE
+  | BUILDER_TYPE
+  | ATTACK_TYPE
+  | REPAIR_TYPE
+  | CLAIM_TYPE
+  | ROOM_TYPE
+  | UNDERTAKER_TYPE
+  | PICKUP_TYPE
+  | VISITOR_TYPE
+  | MAPPER_TYPE;
 
 export const HARVESTER: HARVESTER_TYPE = 'harvest';
 export const UPGRADER: UPGRADER_TYPE = 'upgrade';
@@ -20,9 +33,10 @@ export const CLAIMER: CLAIM_TYPE = 'claim';
 export const UNDERTAKER: UNDERTAKER_TYPE = 'undertaker';
 export const PICKUP: PICKUP_TYPE = 'pickup';
 export const VISITOR: VISITOR_TYPE = 'visitor';
+export const MAPPER: MAPPER_TYPE = 'mapper';
 
 export type StorageType = StructureSpawn | StructureExtension | StructureTower;
 export type Hostiles = Creep | StructureInvaderCore;
-export type UndertakerSource =  Tombstone | Ruin | StructureStorage;
+export type UndertakerSource = Tombstone | Ruin | StructureStorage;
 
-export type StatType = Array<{progress: number, date: string, last: number, timeToUp: number, level: number}>;
+export type StatType = Array<{ progress: number, date: string, last: number, timeToUp: number, level: number }>;

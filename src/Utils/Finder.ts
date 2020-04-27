@@ -97,12 +97,11 @@ export class Finder {
       const visitorCreep: Creep | null = flag.memory.visitor ? Game.getObjectById(flag.memory.visitor) : null;
 
       if (!visitorCreep && flag.memory.visitor) {
-        console.log(`Clear flag - ${flag.name} ${flag.pos}`);
         flag.memory.visitor = undefined;
       }
 
 
-      if (flag.color !== COLOR_YELLOW || visitorCreep) {
+      if ((flag.color !== COLOR_YELLOW && flag.color !== COLOR_WHITE) || visitorCreep) {
         continue;
       }
 
@@ -121,7 +120,25 @@ export class Finder {
   public static getStorages(pos: RoomPosition): StructureStorage[] {
     // @ts-ignore
     return pos.findInRange(FIND_MY_STRUCTURES, 50, {
-      filter: s => s.structureType === STRUCTURE_STORAGE && s.store.getFreeCapacity(RESOURCE_ENERGY) !== 0
+      filter: s => s.structureType === STRUCTURE_STORAGE && s.store.getFreeCapacity() !== 0
     });
+  }
+
+  public static getConstructionSites(pos: RoomPosition): ConstructionSite[] {
+    let constructionSites: ConstructionSite[] = [];
+
+    const sortByTypes: BuildableStructureConstant[] = [STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_TOWER, STRUCTURE_EXTENSION, STRUCTURE_WALL, STRUCTURE_RAMPART, STRUCTURE_ROAD];
+
+    for (const type of sortByTypes) {
+      const targets = pos.findClosestByPath(FIND_MY_CONSTRUCTION_SITES, {
+        filter: e => e.room && e.room.name === pos.roomName && e.structureType === type
+      });
+
+      if (targets) {
+        constructionSites = constructionSites.concat(targets);
+      }
+    }
+
+    return constructionSites;
   }
 }

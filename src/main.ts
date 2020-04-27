@@ -44,9 +44,33 @@ init();
 export const loop = ErrorMapper.wrapLoop(() => {
   console.log(`Current game tick is ${Game.time}`);
 
+  if (!Memory.mapped) {
+    Memory.mapped = {};
+  }
+
+  if (!Memory.sourcesList || Game.time % POWER_BANK_DECAY === 0) {
+    Memory.sourcesList = {};
+  }
+
+  if (!Memory.storagesList || Game.time % POWER_BANK_DECAY === 0) {
+    Memory.storagesList = {};
+  }
+
+  (new RoomVisual()).text(`Creeps = ${Object.keys(Memory.creeps).length}`, 0, 1, {align: 'left'});
+  (new RoomVisual()).text(`Rooms = ${Object.keys(Memory.spawns).length}`, 0, 2, {align: 'left'});
+  (new RoomVisual()).text(`Room visited = ${Object.keys(Memory.mapped).length}`, 0, 3, {align: 'left'});
+
   Stat.save();
 
-  if (Game.time % 50 === 0 || SpawnController.forceReload) {
+  for (const key in Memory.mapped) {
+    const map = Memory.mapped[key];
+
+    if (map.owner === false && map.sourcesHarvestable >= 2 && map.hasController) {
+      console.log(`${key} > ${JSON.stringify(map)}`);
+    }
+  }
+
+  if (Game.time % 50 === 0 || SpawnController.forceReload) {
     SpawnController.forceReload = false;
     console.log(`Reload game controllers`);
     init();
@@ -54,7 +78,6 @@ export const loop = ErrorMapper.wrapLoop(() => {
 
   objects.forEach(o => o.loop());
 
-  // Automatically delete memory of missing creeps
   for (const name in Memory.creeps) {
     if (!(name in Game.creeps)) {
       delete Memory.creeps[name];

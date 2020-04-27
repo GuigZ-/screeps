@@ -36,7 +36,7 @@ export class Upgrade implements WorkInterface {
       return false;
     }
 
-    return creep.store.getCapacity(RESOURCE_ENERGY) !== creep.store.getFreeCapacity(RESOURCE_ENERGY);
+    return creep.store.getCapacity() !== creep.store.getFreeCapacity();
   }
 
   private getControllers(creep: Creep): StructureController[] {

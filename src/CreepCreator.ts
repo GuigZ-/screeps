@@ -2,7 +2,7 @@ import {
   BUILDER,
   CLAIMER,
   HARVESTER,
-  KILLER,
+  KILLER, MAPPER,
   PICKUP,
   REPAIRER,
   ROOM_BUILDER,
@@ -13,14 +13,12 @@ import {
 import {PositionUtil} from './Utils/PositionUtil';
 
 export class CreepCreator {
-  private static defaultBody: BodyPartConstant[] = [MOVE, CARRY, WORK];
   private static buildName(spawn: StructureSpawn, work: WORKS, counter: number = 0): string {
     return `${spawn.room.name}_${work}_${counter}`;
   }
 
   public static build(spawn: StructureSpawn, work: WORKS, opts: SpawnOptions = {}): void {
     let bodyPartNumber: number = 50;
-    let bodyBasePart: number = CreepCreator.defaultBody.length;
     let bodyPartRequired: any[] = [];
 
     switch (work) {
@@ -42,9 +40,9 @@ export class CreepCreator {
           {body: MOVE, value: 50}
         ];
         break;
+      case MAPPER:
       case VISITOR:
         bodyPartNumber = 1;
-        bodyBasePart = 0;
         bodyPartRequired = [
           {body: MOVE, value: 100}
         ];
@@ -60,7 +58,8 @@ export class CreepCreator {
         bodyPartRequired = [
           {body: TOUGH, value: 20},
           {body: MOVE, value: 42},
-          {body: ATTACK, value: 34},
+          {body: RANGED_ATTACK, value: 30},
+          {body: HEAL, value: 4},
           {body: CARRY, value: 2},
           {body: WORK, value: 2}
         ];
@@ -77,10 +76,9 @@ export class CreepCreator {
         throw new Error(`No creeps work found.`);
     }
 
-    const freePart: number = bodyPartNumber - bodyBasePart;
     let bodyPart: BodyPartConstant[] = [];
 
-    for (let i = freePart; i > 0; i--) {
+    for (let i = bodyPartNumber; i > 0; i--) {
       bodyPart = [];
 
       for (const k in bodyPartRequired) {
@@ -102,22 +100,22 @@ export class CreepCreator {
 
         if (work === HARVESTER) {
           source = CreepCreator.getTargetSource(spawn, counter);
-        } else if (work === VISITOR) {
-
         }
+
+        const optsDefault = {
+          memory: {
+            role: work,
+            source: source ? source.id : null,
+            spawnName: spawn.name,
+            ...opts.memory
+          },
+        };
 
         spawnCreep = spawn.spawnCreep(
           bodyPart,
           creepName,
           // @ts-ignore
-          {
-            memory: {
-              role: work,
-              source: source ? source.id : null,
-              spawnName: spawn.name,
-              ...opts.memory
-            },
-          }
+          optsDefault
         );
         counter++;
       } while (spawnCreep === ERR_NAME_EXISTS);
@@ -134,7 +132,7 @@ export class CreepCreator {
   }
 
   private static getTargetSource(spawn: StructureSpawn, counter: number): Source | undefined {
-    const sources: Source[] = PositionUtil.closestSources(spawn.pos, true);
+    const sources: Source[] = PositionUtil.closestSources(spawn.pos, true).filter(s => s.pos.roomName === spawn.pos.roomName);
 
     const sourcesLength = sources.length;
 

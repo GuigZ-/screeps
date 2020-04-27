@@ -1,7 +1,7 @@
-interface Cardinality { W: number, N: number }
+export interface Cardinality { W: number, N: number }
 
 export class RoomUtil {
-  private static getCardinality(roomName: string): Cardinality {
+  public static getCardinality(roomName: string): Cardinality {
     const regexp = /^W([0-9]+)N([0-9]+)$/;
     const roomMatch: RegExpMatchArray | null = roomName.match(regexp);
 

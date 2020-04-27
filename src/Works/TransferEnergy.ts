@@ -1,4 +1,4 @@
-import {StorageType} from '../Constants';
+import {CLAIMER, ROOM_BUILDER, StorageType} from '../Constants';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {RoomUtil} from '../Utils/RoomUtil';
@@ -19,7 +19,14 @@ export class TransferEnergy implements WorkInterface {
         continue;
       }
 
-      if (!RoomUtil.isNearestRoom(Game.spawns[creep.memory.spawnName].room.name, storage.pos.roomName)) {
+      if (creep.memory.spawnName === 'Spawn1') {
+        console.log(storage.pos);
+      }
+
+      if (creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER && !RoomUtil.isNearestRoom(
+        Game.spawns[creep.memory.spawnName].room.name,
+        storage.pos.roomName
+      )) {
         continue;
       }
 
@@ -40,7 +47,8 @@ export class TransferEnergy implements WorkInterface {
       return false;
     }
 
-    return creep.store.getCapacity() !== creep.store.getFreeCapacity();
+    return creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && creep.store.getCapacity(RESOURCE_ENERGY) !== creep.store.getFreeCapacity(
+      RESOURCE_ENERGY);
   }
 
   private getEnergyStorages(creep: Creep): StorageType[] {
@@ -53,9 +61,14 @@ export class TransferEnergy implements WorkInterface {
       // @ts-ignore : target.store not exists for RoomObject
       if (isStorageType && target.store.getFreeCapacity() > 0) {
         storages.push(target as StorageType);
+        return storages;
       }
     }
 
-    return storages.concat(PositionUtil.closestEnergyStorages(creep.pos));
+    return storages.concat(PositionUtil.closestEnergyStorages(
+      creep.pos,
+      true,
+      creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER
+    ));
   }
 }

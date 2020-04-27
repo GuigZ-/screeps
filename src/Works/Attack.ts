@@ -6,15 +6,20 @@ import {WorkInterface} from './WorkInterface';
 export class Attack implements WorkInterface {
   public work(creep: Creep): boolean {
     if (!Attack.can(creep)) {
+      if (creep.memory.attack) {
+        resetMemory(creep);
+      }
       return false;
     }
 
     resetMemory(creep);
 
+    creep.heal(creep);
+
     const hostiles: Hostiles[] = Attack.getHostiles(creep);
 
     for (const hostile of hostiles) {
-      const attack: CreepActionReturnCode = creep.attack(hostile);
+      const attack: CreepActionReturnCode = creep.rangedAttack(hostile);
 
       if (workMoveTo(creep, attack, hostile)) {
         creep.memory.attack = true;
@@ -28,7 +33,9 @@ export class Attack implements WorkInterface {
   }
 
   private static can(creep: Creep): boolean {
-    return Attack.getHostiles(creep).length > 0;
+    const length = Attack.getHostiles(creep).length;
+
+    return length > 0;
   }
 
   private static getHostiles(creep: Creep): Hostiles[] {
@@ -42,6 +49,6 @@ export class Attack implements WorkInterface {
       }
     }
 
-    return hostiles.concat(PositionUtil.closestHostiles(creep.pos));
+    return hostiles.concat(PositionUtil.closestHostiles(creep.pos, 100));
   }
 }

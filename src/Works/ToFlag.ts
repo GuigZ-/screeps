@@ -1,4 +1,4 @@
-import {Hostiles, KILLER} from '../Constants';
+import {CLAIMER, Hostiles, KILLER} from '../Constants';
 import {moveTo, resetMemory} from '../Utils/CreepUtil';
 import {Finder} from '../Utils/Finder';
 import {PositionUtil} from '../Utils/PositionUtil';
@@ -16,6 +16,10 @@ export class ToFlag implements WorkInterface {
 
     for (const flag of flags) {
       const hostiles: Hostiles[] = PositionUtil.closestHostiles(flag.pos);
+
+      if (creep.memory.role === CLAIMER && flag.color !== COLOR_WHITE) {
+        continue;
+      }
 
       if (hostiles.length > 0 && creep.memory.role !== KILLER) {
         continue;

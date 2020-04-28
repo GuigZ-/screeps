@@ -21,18 +21,18 @@ export class ToFlag implements WorkInterface {
         continue;
       }
 
-      if (hostiles.length > 0 && creep.memory.role !== KILLER) {
+      if (creep.room.name === flag.pos.roomName && hostiles.length > 0 && creep.memory.role !== KILLER) {
         continue;
       }
 
-      if (hostiles.length === 0 && creep.memory.role === KILLER) {
+      if (creep.room.name === flag.pos.roomName && hostiles.length === 0 && creep.memory.role === KILLER) {
         continue;
       }
 
       if (flag.room && creep.room.name === flag.room.name) {
         continue;
       }
-
+console.log(`${creep.name}`);
       if (moveTo(creep, flag)) {
         creep.memory.flag = flag.name;
         return true;

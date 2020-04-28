@@ -52,9 +52,9 @@ export class CreepController implements ControllerInterface {
 
     this.worksByType = {
       [BUILDER]: [defense, pickUp, undertaker, harvest, build, transfer, transferStorage, upgrade],
-      [CLAIMER]: [defense, flag, claim, pickUp, undertaker, harvest, build, transfer, transferStorage],
+      [CLAIMER]: [flag, claim, pickUp, undertaker, harvest, build, transfer, transferStorage],
       [HARVESTER]: [defense, pickUp, undertaker, harvest, transfer, transferStorage, build, upgrade],
-      [KILLER]: [attack, flag, pickUp, undertaker, harvest, transfer, build, transferStorage, repair, upgrade],
+      [KILLER]: [flag, roomBuilder, pickUp, undertaker, harvest, build, transfer, transferStorage, repair, upgrade],
       [PICKUP]: [defense, pickUp, undertaker, harvest, repair, build, transfer, transferStorage, upgrade],
       [REPAIRER]: [defense, pickUp, undertaker, harvest, repair, transfer, build, transferStorage, upgrade],
       [ROOM_BUILDER]: [defense, roomBuilder, pickUp, undertaker, harvest, build, transfer, transferStorage],
@@ -77,10 +77,15 @@ export class CreepController implements ControllerInterface {
   loop(): void {
     let creep: Creep;
     try {
-       creep = this.getCreep();
+      creep = this.getCreep();
     } catch (e) {
       console.log(`<span style='color:red'>${e.message}</span>`);
       return;
+    }
+
+
+    if (creep.getActiveBodyparts(HEAL) && creep.hits !== creep.hitsMax) {
+      creep.heal(creep);
     }
 
     if (this.worksByType[creep.memory.role]) {

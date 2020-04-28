@@ -114,7 +114,7 @@ export class SpawnController implements ControllerInterface {
       CreepCreator.build(spawn, UPGRADER);
     } else if (!creepNumberByType[BUILDER] && constructionSites) {
       CreepCreator.build(spawn, BUILDER);
-    } else if (!creepNumberByType[KILLER] || creepNumberByType[KILLER] < Game.gcl) {
+    } else if (!creepNumberByType[KILLER] || creepNumberByType[KILLER] < Game.gcl.level) {
       CreepCreator.build(spawn, KILLER);
     } else if (!creepNumberByType[REPAIRER] && structureToRepair) {
       CreepCreator.build(spawn, REPAIRER);
@@ -133,7 +133,6 @@ export class SpawnController implements ControllerInterface {
       flags: for (const key in flags) {
         const flag: Flag = flags[key];
 
-
         if (!flag || flag.color !== COLOR_WHITE) {
           continue;
         }
@@ -142,11 +141,7 @@ export class SpawnController implements ControllerInterface {
           continue;
         }
 
-        if (!flag.room || !flag.room.controller) {
-          continue;
-        }
-
-        if (flag.room.controller.owner || flag.memory.claim) {
+        if (flag.memory.claim) {
           continue;
         }
 
@@ -248,10 +243,6 @@ export class SpawnController implements ControllerInterface {
 
   private static buildExtension(pos: RoomPosition): boolean {
     const room: Room = Game.rooms[pos.roomName];
-
-    if (true === true) {
-      return false;
-    }
 
     if (!isBuildable(pos)) {
       return false;

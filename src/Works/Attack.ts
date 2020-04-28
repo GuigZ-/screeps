@@ -14,8 +14,6 @@ export class Attack implements WorkInterface {
 
     resetMemory(creep);
 
-    creep.heal(creep);
-
     const hostiles: Hostiles[] = Attack.getHostiles(creep);
 
     for (const hostile of hostiles) {

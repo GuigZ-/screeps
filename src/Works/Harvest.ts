@@ -2,13 +2,12 @@ import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {RoomUtil} from '../Utils/RoomUtil';
 import {WorkInterface} from './WorkInterface';
-import {CLAIMER, ROOM_BUILDER} from '../Constants';
+import {CLAIMER, KILLER, ROOM_BUILDER} from '../Constants';
 
 export class Harvest implements WorkInterface {
 
   public work(creep: Creep): boolean {
     if (!Harvest.can(creep)) {
-
       return false;
     }
 
@@ -17,7 +16,7 @@ export class Harvest implements WorkInterface {
     const sources: Source[] = Harvest.getSources(creep);
 
     for (const source of sources) {
-      if (creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER && !RoomUtil.isNearestRoom(
+      if (creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER  && creep.memory.role !== KILLER  && !RoomUtil.isNearestRoom(
         Game.spawns[creep.memory.spawnName].room.name,
         source.pos.roomName
       )) {
@@ -67,7 +66,7 @@ export class Harvest implements WorkInterface {
 
     return targets.concat(PositionUtil.closestSources(
       creep.pos,
-      creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER
+      creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER  && creep.memory.role !== KILLER
     ));
   }
 }

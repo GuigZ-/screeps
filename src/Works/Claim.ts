@@ -7,6 +7,8 @@ export class Claim implements WorkInterface {
       return false;
     }
 
+    console.log(`Claim ${creep.pos}`);
+
     resetMemory(creep);
 
     const controllers: StructureController[] = Claim.getConstructionSites(creep);

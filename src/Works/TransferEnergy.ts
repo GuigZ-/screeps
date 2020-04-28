@@ -1,4 +1,4 @@
-import {CLAIMER, ROOM_BUILDER, StorageType} from '../Constants';
+import {CLAIMER, KILLER, ROOM_BUILDER, StorageType} from '../Constants';
 import {resetMemory, workMoveTo} from '../Utils/CreepUtil';
 import {PositionUtil} from '../Utils/PositionUtil';
 import {RoomUtil} from '../Utils/RoomUtil';
@@ -19,11 +19,7 @@ export class TransferEnergy implements WorkInterface {
         continue;
       }
 
-      if (creep.memory.spawnName === 'Spawn1') {
-        console.log(storage.pos);
-      }
-
-      if (creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER && !RoomUtil.isNearestRoom(
+      if (creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER  && creep.memory.role !== KILLER  && !RoomUtil.isNearestRoom(
         Game.spawns[creep.memory.spawnName].room.name,
         storage.pos.roomName
       )) {
@@ -68,7 +64,7 @@ export class TransferEnergy implements WorkInterface {
     return storages.concat(PositionUtil.closestEnergyStorages(
       creep.pos,
       true,
-      creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER
+      creep.memory.role !== CLAIMER && creep.memory.role !== ROOM_BUILDER  && creep.memory.role !== KILLER
     ));
   }
 }

@@ -33,7 +33,8 @@ export class Build implements WorkInterface {
       return false;
     }
 
-    return creep.store.getCapacity() !== creep.store.getFreeCapacity();
+    return creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && creep.store.getCapacity(RESOURCE_ENERGY) !== creep.store.getFreeCapacity(
+      RESOURCE_ENERGY);
   }
 
   private static getConstructionSites(creep: Creep): ConstructionSite[] {

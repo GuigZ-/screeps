@@ -57,8 +57,8 @@ export class CreepCreator {
       case KILLER:
         bodyPartRequired = [
           {body: TOUGH, value: 20},
-          {body: MOVE, value: 42},
-          {body: RANGED_ATTACK, value: 30},
+          {body: MOVE, value: 50},
+          {body: RANGED_ATTACK, value: 22},
           {body: HEAL, value: 4},
           {body: CARRY, value: 2},
           {body: WORK, value: 2}
